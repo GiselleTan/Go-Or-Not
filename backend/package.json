@@ -1,0 +1,49 @@
+{
+  "name": "go-or-not-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "dynamodb:create-table": "node scripts/create-table.mjs",
+    "dev": "npm run docker:up && npm run dynamodb:create-table && serverless offline start",
+    "build": "serverless package",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "deploy": "serverless deploy",
+    "deploy:prod": "serverless deploy --stage prod",
+    "remove": "serverless remove",
+    "logs": "serverless logs -f example -t",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.160",
+    "@types/express": "^5.0.6",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
+    "esbuild": "^0.27.3",
+    "eslint": "^10.0.2",
+    "glob": "^13.0.6",
+    "js-yaml": "^4.1.1",
+    "prettier": "^3.8.1",
+    "serverless": "^4.33.0",
+    "serverless-dynamodb": "^0.2.56",
+    "serverless-esbuild": "^1.57.0",
+    "serverless-offline": "^14.4.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.996.0",
+    "@aws-sdk/lib-dynamodb": "^3.996.0"
+  }
+}

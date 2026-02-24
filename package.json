@@ -1,0 +1,39 @@
+{
+  "name": "go-or-not",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CS5224-Cloud-Computing/Go-Or-Not.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/CS5224-Cloud-Computing/Go-Or-Not/issues"
+  },
+  "homepage": "https://github.com/CS5224-Cloud-Computing/Go-Or-Not#readme",
+  "devDependencies": {
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.2.5"
+  },
+  "lint-staged": {
+    "frontend/go-or-not/**/*.{ts,tsx}": [
+      "cd frontend/go-or-not && npm run lint -- --fix",
+      "prettier --write"
+    ],
+    "backend/**/*.{ts,js}": [
+      "cd backend && npm run lint -- --fix",
+      "prettier --write"
+    ],
+    "**/*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
+}
