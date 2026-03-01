@@ -34,18 +34,28 @@ provider:
 
 functions:
   health:
-    handler: src/handlers/health.handler
+    handler: src/handlers/health/index.handler
     events:
-      - httpApi:
+      - http:
           path: /health
           method: GET
+          cors: true
 
   getWeatherMetadata:
-    handler: src/handlers/getWeatherMetadata.handler
+    handler: src/handlers/getWeatherMetadata/index.handler
     events:
-      - httpApi:
+      - http:
           path: /weather-metadata
           method: GET
+          cors: true
+          request:
+            parameters:
+              querystrings:
+                latitude: true
+                longitude: true
+                region: false
+            schemas:
+              application/json: ${file(src/handlers/getWeatherMetadata/schema.json)}
 
 plugins:
   - serverless-esbuild
