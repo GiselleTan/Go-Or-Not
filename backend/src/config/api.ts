@@ -4,4 +4,5 @@ export const API_URLS = {
   airTemperature: `${BASE_URL}/air-temperature`,
   psi: `${BASE_URL}/psi`,
   uv: `${BASE_URL}/uv`,
+  twoHourForecast: `${BASE_URL}/two-hr-forecast`,
 } as const;

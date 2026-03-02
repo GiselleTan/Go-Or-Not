@@ -13,7 +13,7 @@ export const handler = async (
         'Access-Control-Allow-Origin': '*',
       },
       body: JSON.stringify({
-        message: 'Lambda is running',
+        message: 'Lambda is running!',
         timestamp: new Date().toISOString(),
       }),
     };

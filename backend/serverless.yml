@@ -8,15 +8,16 @@ build:
 provider:
   name: aws
   runtime: nodejs20.x
-  region: ${opt:region, 'us-east-1'}
+  region: ${opt:region, 'ap-southeast-1'}
   stage: ${opt:stage, 'dev'}
   memorySize: 512
   timeout: 30
   environment:
     NODE_ENV: ${self:provider.stage}
-    TABLE_NAME: ${self:custom.tableName}
     WEATHER_METADATA_CACHE_TABLE: ${self:custom.weatherMetadataTableName}
-    IS_OFFLINE: ${env:IS_OFFLINE, 'false'}
+    WEATHER_CACHE_TABLE: ${self:custom.weather2hrTableName}
+    IS_OFFLINE: ${env:IS_OFFLINE, 'true'}
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1'
   iam:
     role:
       statements:
@@ -55,6 +56,21 @@ functions:
             schemas:
               application/json: ${file(src/handlers/getWeatherMetadata/schema.json)}
 
+  get2hrWeather:
+    handler: src/handlers/get2hrWeather/index.handler
+    events:
+      - http:
+          path: /weather
+          method: GET
+          cors: true
+          request:
+            parameters:
+              querystrings:
+                latitude: true
+                longitude: true
+            schemas:
+              application/json: ${file(src/handlers/get2hrWeather/schema.json)}
+
 plugins:
   - serverless-esbuild
   - serverless-offline
@@ -79,15 +95,15 @@ custom:
     lambdaPort: 3003
     reloadHandler: true
     noPrependStageInUrl: true
-  tableName: go-or-not-${self:provider.stage}
   weatherMetadataTableName: weather-metadata-cache-${self:provider.stage}
+  weather2hrTableName: weather-2hr-cache-${self:provider.stage}
 
 resources:
   Resources:
-    GoOrNotTable:
+    WeatherMetadataCacheTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:custom.tableName}
+        TableName: ${self:custom.weatherMetadataTableName}
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
           - AttributeName: pk
@@ -99,11 +115,14 @@ resources:
             KeyType: HASH
           - AttributeName: sk
             KeyType: RANGE
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
 
-    WeatherMetadataCacheTable:
+    Weather2hrCacheTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:custom.weatherMetadataTableName}
+        TableName: ${self:custom.weather2hrTableName}
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
           - AttributeName: pk
