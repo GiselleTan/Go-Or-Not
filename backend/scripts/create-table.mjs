@@ -1,4 +1,4 @@
-import { DynamoDBClient, CreateTableCommand } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, CreateTableCommand, UpdateTimeToLiveCommand } from '@aws-sdk/client-dynamodb';
 import { readFileSync } from 'fs';
 import { load } from 'js-yaml';
 
@@ -32,7 +32,8 @@ for (const tableProps of tableDefinitions) {
   const tableName = tableProps.TableName
     .replace(/\$\{self:provider\.stage\}/g, stage)
     .replace(/\$\{self:custom\.tableName\}/g, `go-or-not-${stage}`)
-    .replace(/\$\{self:custom\.weatherMetadataTableName\}/g, `weather-metadata-cache-${stage}`);
+    .replace(/\$\{self:custom\.weatherMetadataTableName\}/g, `weather-metadata-cache-${stage}`)
+    .replace(/\$\{self:custom\.weather2hrTableName\}/g, `weather-2hr-cache-${stage}`);
 
   try {
     await client.send(
@@ -46,6 +47,19 @@ for (const tableProps of tableDefinitions) {
       })
     );
     console.log(`✅ Table '${tableName}' created successfully!`);
+
+    // Enable TTL for local environment
+    await client.send(
+      new UpdateTimeToLiveCommand({
+        TableName: tableName,
+        TimeToLiveSpecification: {
+          AttributeName: 'ttl',
+          Enabled: true,
+        },
+      })
+    );
+    console.log(`TTL enabled on 'ttl' attribute for '${tableName}'`);
+    
   } catch (error) {
     if (error.name === 'ResourceInUseException') {
       console.log(`ℹ️  Table '${tableName}' already exists`);
