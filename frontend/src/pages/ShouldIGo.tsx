@@ -1,4 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import CloudyIcon from '../assets/cloudy.svg';
+import ThunderIcon from '../assets/thunder.svg';
+import RainIcon from '../assets/rain.svg';
+import SunnyIcon from '../assets/sunny.svg';
 
 // FORMULA: Steadman's Formula for feels like temperature
 // we assume here that relative humidity is given as a %, and wind is given in knots (i.e., 1 kn = 1.852km/h)
@@ -27,11 +31,11 @@ const getPSIStatus = (psi: number) => {
 
 const getWeatherIcon = (description: string) => {
   const desc = description.toLowerCase();
-  if (desc.includes("thunder")) return "⛈️";
-  if (desc.includes("rain") || desc.includes("shower") || desc.includes("mist")) return "🌧️";
-  if (desc.includes("partly cloudy") || desc.includes("windy")) return "🌤️";
-  if (desc.includes("fair")) return "☀️";
-  return "☁️"; // Cloudy, Hazy, Slightly Hazy, Fog
+  if (desc.includes("thunder")) return ThunderIcon;
+  if (desc.includes("rain") || desc.includes("shower") || desc.includes("mist")) return RainIcon;
+  if (desc.includes("partly cloudy") || desc.includes("windy")) return CloudyIcon;
+  if (desc.includes("fair")) return SunnyIcon;
+  return CloudyIcon; // Cloudy, Hazy, Slightly Hazy, Fog
 };
 
 const ShouldIGo = () => {
@@ -108,7 +112,7 @@ const ShouldIGo = () => {
     weatherData.windSpeed
   );
 
-  const weatherIcon = getWeatherIcon(weatherData.desc);
+  const weatherIcon = useMemo(() => getWeatherIcon(weatherData.desc), [weatherData.desc]);
   const uvInfo = getUVStatus(weatherData.uvIndex);
   const psiInfo = getPSIStatus(weatherData.psi);
 
@@ -251,7 +255,7 @@ const ShouldIGo = () => {
 
                 {/* Icon & Temp Group */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ fontSize: '3.3rem' }}>{weatherIcon}</div>
+                  <div> <img src={weatherIcon} alt="Weather Icon" style={{ height: '3.5em', width: 'auto' }}/></div>
                   <div style={{ fontSize: '3rem', fontWeight: 'bold' }}>{weatherData.temp}°C</div>
                 </div>
 
