@@ -233,6 +233,7 @@ body {
 }
 
 .update-bar-text h3 {
+  color: #6200ea;
   font-size: 1rem;
   font-weight: 700;
   margin-bottom: 4px;
@@ -272,7 +273,7 @@ body {
   padding: 10px 24px;
   border-radius: 10px;
   border: none;
-  background: #03dac6;
+  background: #6200ea;
   color: #fff;
   font-size: 0.9rem;
   font-weight: 700;
@@ -283,8 +284,8 @@ body {
 }
 
 .btn-primary:hover {
-  background: #00b8a3;
-  box-shadow: 0 4px 12px rgba(3, 218, 198, 0.4);
+  background: #4a01b0;
+  box-shadow: 0 4px 12px rgba(98, 0, 234, 0.4);
   transform: translateY(-1px);
 }
 

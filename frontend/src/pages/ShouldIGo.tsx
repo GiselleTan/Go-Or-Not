@@ -373,17 +373,19 @@ const ShouldIGo = () => {
 
       {/* Bottom email update bar */}
       <div className="card update-bar">
-        <div className="update-bar-text">
-          <h3>Stay Updated</h3>
+        <div className="update-bar-text" style={{flex: 1}}>
+          <h3>STAY UPDATED</h3>
           <p>Get traffic &amp; weather alerts for your route straight to your inbox.</p>
         </div>
-        <div className="update-bar-controls">
+        <div className="email-placeholder">
           <input
-            className="input-field"
-            type="email"
-            placeholder="Your email address"
-            style={{ minWidth: 220 }}
-          />
+              className="input-field"
+              type="email"
+              placeholder="Enter your email address"
+              style={{ minWidth: 400 }}
+            />
+        </div>
+        <div className="update-bar-controls">
           <select
             className="select-field"
             value={updateHour}
@@ -392,6 +394,7 @@ const ShouldIGo = () => {
             <option value="1">1 hour later</option>
             <option value="2">2 hours later</option>
             <option value="4">4 hours later</option>
+            <option value='8'>8 hours later</option>
           </select>
           <button className="btn-primary">Notify Me</button>
         </div>
