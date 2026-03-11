@@ -210,9 +210,8 @@ body {
 }
 
 .weather-placeholder {
-  flex: 1;
-  min-height: 120px;
-  border: 1.5px dashed rgba(0, 0, 0, 0.12);
+  min-height: 60px;
+  border: 1.5px rgba(0, 0, 0, 0.12);
   border-radius: 12px;
   background: #f8f9fa;
   display: flex;
