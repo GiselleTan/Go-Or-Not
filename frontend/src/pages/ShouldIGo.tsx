@@ -3,6 +3,9 @@ import CloudyIcon from '../assets/cloudy.svg';
 import ThunderIcon from '../assets/thunder.svg';
 import RainIcon from '../assets/rain.svg';
 import SunnyIcon from '../assets/sunny.svg';
+import BadIcon from '../assets/bad.svg';
+import GoodIcon from '../assets/good.svg';
+import MaybeIcon from '../assets/maybe.svg';
 
 // FORMULA: Steadman's Formula for feels like temperature
 // we assume here that relative humidity is given as a %, and wind is given in knots (i.e., 1 kn = 1.852km/h)
@@ -36,6 +39,34 @@ const getWeatherIcon = (description: string) => {
   if (desc.includes("partly cloudy") || desc.includes("windy")) return CloudyIcon;
   if (desc.includes("fair")) return SunnyIcon;
   return CloudyIcon; // Cloudy, Hazy, Slightly Hazy, Fog
+};
+
+const overviewData = (uv: number, psi: number) => {
+  if (uv > 7 || psi > 200) {
+    return {
+      icon: BadIcon,
+      advice: "Oh no!",
+      desc: "Looks like it might not be the time...",
+      color: "#C80000",
+      backgroundColor: "rgba(200, 0, 0, 0.1)"
+    }
+  }
+  if (uv > 5 || psi > 100) {
+    return {
+      icon: MaybeIcon,
+      advice: "Hmm...maybe?",
+      desc: "Conditions aren't the best right now.",
+      color: "#CC7400",
+      backgroundColor: "rgba(204, 116, 0, 0.1)"
+    }
+  }
+  return {
+    icon: GoodIcon,
+    advice: "Looking good!",
+    desc: "It's a beautiful day to head out!",
+    color: "#008E9B",
+    backgroundColor: "rgba(0, 142, 155, 0.1)"
+  }
 };
 
 const ShouldIGo = () => {
@@ -115,6 +146,7 @@ const ShouldIGo = () => {
   const weatherIcon = useMemo(() => getWeatherIcon(weatherData.desc), [weatherData.desc]);
   const uvInfo = getUVStatus(weatherData.uvIndex);
   const psiInfo = getPSIStatus(weatherData.psi);
+  const overviewInfo = overviewData(weatherData.uvIndex, weatherData.psi);
 
   useEffect(() => {
     fetchAllWeatherData(coords.lat, coords.lon);
@@ -359,9 +391,17 @@ const ShouldIGo = () => {
               </div>
             </div>
           </div>
-            {/* Overview */}
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 0.5, minHeight: 0 }}>
-              <p className="section-title">Overview</p>
+          </div>
+
+          {/* Overview */}
+          <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <p className="section-title">Overview</p>
+            <div className="overview-placeholder" style={{ flex: 1, minHeight: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#524e4e' , outline: `2px solid ${overviewInfo.color}`, backgroundColor: overviewInfo.backgroundColor,borderRadius: '12px', padding: '15px', textAlign: 'center'}}>
+              <div> <img src={overviewInfo.icon} alt="Overview Icon" style={{ height: '2em', width: 'auto', marginRight: '15px'}}/></div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems:'flex-start' }}>
+                <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: overviewInfo.color }}>{overviewInfo.advice}</span>
+                <span style={{ fontSize: '0.9rem', color: overviewInfo.color}}>{overviewInfo.desc}</span>
+              </div>
             </div>
           </div>
         </div>
