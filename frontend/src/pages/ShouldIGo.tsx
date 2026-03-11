@@ -240,8 +240,11 @@ const ShouldIGo = () => {
               </ul>
             )}
           </div>
+
+          {/* Current Conditions */}
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
             <p className="section-title">Current Conditions</p>
+
             <div className="weather-placeholder" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '20px', height: '100%' }}>
               <div style={{
                 display: 'flex',
@@ -256,103 +259,109 @@ const ShouldIGo = () => {
                 {/* Icon & Temp Group */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div> <img src={weatherIcon} alt="Weather Icon" style={{ height: '3.5em', width: 'auto' }}/></div>
-                  <div style={{ fontSize: '3rem', fontWeight: 'bold' }}>{weatherData.temp}°C</div>
+                  <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#524e4e' }}>{weatherData.temp}°C</div>
                 </div>
 
                 {/* Description & Feels Like Group */}
                 <div style={{ display: 'flex', flexDirection: 'column', flex: '1', minWidth: '100px', gap: '5px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '1.1rem', lineHeight: '1.2' }}>{weatherData.desc}</span>
+                    <span style={{ fontWeight: 'bold', fontSize: '1.1rem', lineHeight: '1.2', color: '#524e4e'}}>{weatherData.desc}</span>
                     <span style={{ cursor: 'help', fontSize: '0.85rem', color: '#666' }} title="A 2-hour Weather Forecast">ⓘ</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                    <span style={{ fontSize: '0.85rem', color: '#666' }}>Feels like {currentFeelsLike}°C</span>
+                    <span style={{ fontSize: '0.85rem', color: '#524e4e' }}>Feels like {currentFeelsLike}°C</span>
                     <span style={{ cursor: 'help', fontSize: '0.85rem', color: '#666' }} title="Calculated based on temperature, humidity, and wind speed using Steadman Apparent Temperature formula.">ⓘ</span>
                   </div>
                 </div>
-
               </div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', width: '100%', marginTop: '15px' }}>
-                <div style={{ textAlign: 'center', flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                    <p style={{ fontSize: '0.8rem', color: '#888' }}>UV INDEX</p>
-                    <p style={{ cursor: 'help', fontSize: '0.8rem', color: '#888' }} title="Measures how intense the Ultra Violet (UV) rays from the Sun are predicted to be.">ⓘ</p>
-                  </div>
-                  <div style={{ position: 'relative', width: '100px', margin: '0 auto' }}>
-                    {/* The SVG Arc */}
-                    <svg width="100" height="60" viewBox="0 0 100 60">
-                      {/* Background Gray Track */}
-                      <path
-                        d="M 10 50 A 40 40 0 0 1 90 50"
-                        fill="none"
-                        stroke="#eee"
-                        strokeWidth="8"
-                        strokeLinecap="round"
-                      />
-                      {/* Colored Progress Arc */}
-                      <path
-                        d="M 10 50 A 40 40 0 0 1 90 50"
-                        fill="none"
-                        stroke={uvInfo.color}
-                        strokeWidth="8"
-                        strokeLinecap="round"
-                        strokeDasharray="125.6"
-                        /* This math calculates how much of the arc to fill based on a scale of 1-12 */
-                        strokeDashoffset={125.6 - (125.6 * Math.min(weatherData.uvIndex, 12)) / 12}
-                        style={{ transition: 'stroke-dashoffset 0.5s ease' }}
-                      />
-                    </svg>
 
-                    {/* The Number in the center */}
-                    <div style={{
-                      position: 'absolute',
-                      top: '25px',
-                      left: '0',
-                      right: '0',
-                      fontSize: '1.2rem',
-                      fontWeight: 'bold',
-                      color: uvInfo.color
-                    }}>
-                      {weatherData.uvIndex}
-                    </div>
-                  </div>
+            {/* UV Index */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', width: '100%', marginTop: '15px' }}>
+              <div style={{ textAlign: 'center', flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                  <p style={{ fontSize: '0.8rem', color: '#524e4e' }}>UV INDEX</p>
+                  <p style={{ cursor: 'help', fontSize: '0.8rem', color: '#888' }} title="Measures how intense the Ultra Violet (UV) rays from the Sun are predicted to be.">ⓘ</p>
+                </div>
+                <div style={{ position: 'relative', width: '100px', margin: '0 auto' }}>
+                  {/* The SVG Arc */}
+                  <svg width="100" height="60" viewBox="0 0 100 60">
+                    {/* Background Gray Track */}
+                    <path
+                      d="M 10 50 A 40 40 0 0 1 90 50"
+                      fill="none"
+                      stroke="#eee"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                    />
+                    {/* Colored Progress Arc */}
+                    <path
+                      d="M 10 50 A 40 40 0 0 1 90 50"
+                      fill="none"
+                      stroke={uvInfo.color}
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray="125.6"
+                      /* This math calculates how much of the arc to fill based on a scale of 1-12 */
+                      strokeDashoffset={125.6 - (125.6 * Math.min(weatherData.uvIndex, 12)) / 12}
+                      style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+                    />
+                  </svg>
 
-                  <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: uvInfo.color, marginTop: '5px' }}>
-                    {uvInfo.word}
+                  {/* The Number in the center */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '25px',
+                    left: '0',
+                    right: '0',
+                    fontSize: '1.2rem',
+                    fontWeight: 'bold',
+                    color: uvInfo.color
+                  }}>
+                    {weatherData.uvIndex}
                   </div>
                 </div>
 
-                <div style={{ textAlign: 'center', flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                    <p style={{ fontSize: '0.8rem', color: '#888' }}>PSI</p>
-                    <p style={{ cursor: 'help', fontSize: '0.8rem', color: '#888' }} title="Pollutant Standards Index: Measures air quality, taking into account several pollutants.">ⓘ</p>
-                  </div>
-                  {/* Arc will go here */}
-                  <div style={{ position: 'relative', width: '100px', margin: '0 auto' }}>
-                    <svg width="100" height="60" viewBox="0 0 100 60">
-                      <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#eee" strokeWidth="8" strokeLinecap="round" />
-                      <path
-                        d="M 10 50 A 40 40 0 0 1 90 50"
-                        fill="none"
-                        stroke={psiInfo.color}
-                        strokeWidth="8"
-                        strokeLinecap="round"
-                        strokeDasharray="125.6"
-                        /* PSI scale up to 300 */
-                        strokeDashoffset={125.6 - (125.6 * Math.min(weatherData.psi, 300)) / 300}
-                        style={{ transition: 'stroke-dashoffset 0.5s ease' }}
-                      />
-                    </svg>
-                    <div style={{ position: 'absolute', top: '25px', left: '0', right: '0', fontSize: '1.2rem', fontWeight: 'bold', color: psiInfo.color }}>
-                      {weatherData.psi}
-                    </div>
-                  </div>
-
-                  <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: psiInfo.color, marginTop: '5px' }}>
-                    {psiInfo.word}
-                  </div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: uvInfo.color, marginTop: '5px' }}>
+                  {uvInfo.word}
                 </div>
               </div>
+                    
+              {/* PSI */}   
+              <div style={{ textAlign: 'center', flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                  <p style={{ fontSize: '0.8rem', color: '#524e4e' }}>PSI</p>
+                  <p style={{ cursor: 'help', fontSize: '0.8rem', color: '#888' }} title="Pollutant Standards Index: Measures air quality, taking into account several pollutants.">ⓘ</p>
+                </div>
+                {/* Arc will go here */}
+                <div style={{ position: 'relative', width: '100px', margin: '0 auto' }}>
+                  <svg width="100" height="60" viewBox="0 0 100 60">
+                    <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#eee" strokeWidth="8" strokeLinecap="round" />
+                    <path
+                      d="M 10 50 A 40 40 0 0 1 90 50"
+                      fill="none"
+                      stroke={psiInfo.color}
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray="125.6"
+                      /* PSI scale up to 300 */
+                      strokeDashoffset={125.6 - (125.6 * Math.min(weatherData.psi, 300)) / 300}
+                      style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+                    />
+                  </svg>
+                  <div style={{ position: 'absolute', top: '25px', left: '0', right: '0', fontSize: '1.2rem', fontWeight: 'bold', color: psiInfo.color }}>
+                    {weatherData.psi}
+                  </div>
+                </div>
+
+                <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: psiInfo.color, marginTop: '5px' }}>
+                  {psiInfo.word}
+                </div>
+              </div>
+            </div>
+          </div>
+            {/* Overview */}
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 0.5, minHeight: 0 }}>
+              <p className="section-title">Overview</p>
             </div>
           </div>
         </div>
