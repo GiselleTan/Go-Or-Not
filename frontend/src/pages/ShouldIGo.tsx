@@ -1,4 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import CloudyIcon from '../assets/cloudy.svg';
+import ThunderIcon from '../assets/thunder.svg';
+import RainIcon from '../assets/rain.svg';
+import SunnyIcon from '../assets/sunny.svg';
+import BadIcon from '../assets/bad.svg';
+import GoodIcon from '../assets/good.svg';
+import MaybeIcon from '../assets/maybe.svg';
 
 // FORMULA: Steadman's Formula for feels like temperature
 // we assume here that relative humidity is given as a %, and wind is given in knots (i.e., 1 kn = 1.852km/h)
@@ -27,11 +34,39 @@ const getPSIStatus = (psi: number) => {
 
 const getWeatherIcon = (description: string) => {
   const desc = description.toLowerCase();
-  if (desc.includes("thunder")) return "⛈️";
-  if (desc.includes("rain") || desc.includes("shower") || desc.includes("mist")) return "🌧️";
-  if (desc.includes("partly cloudy") || desc.includes("windy")) return "🌤️";
-  if (desc.includes("fair")) return "☀️";
-  return "☁️"; // Cloudy, Hazy, Slightly Hazy, Fog
+  if (desc.includes("thunder")) return ThunderIcon;
+  if (desc.includes("rain") || desc.includes("shower") || desc.includes("mist")) return RainIcon;
+  if (desc.includes("partly cloudy") || desc.includes("windy")) return CloudyIcon;
+  if (desc.includes("fair")) return SunnyIcon;
+  return CloudyIcon; // Cloudy, Hazy, Slightly Hazy, Fog
+};
+
+const overviewData = (uv: number, psi: number) => {
+  if (uv > 7 || psi > 200) {
+    return {
+      icon: BadIcon,
+      advice: "Oh no!",
+      desc: "Looks like it might not be the time...",
+      color: "#C80000",
+      backgroundColor: "rgba(200, 0, 0, 0.1)"
+    }
+  }
+  if (uv > 5 || psi > 100) {
+    return {
+      icon: MaybeIcon,
+      advice: "Hmm...maybe?",
+      desc: "Conditions aren't the best right now.",
+      color: "#CC7400",
+      backgroundColor: "rgba(204, 116, 0, 0.1)"
+    }
+  }
+  return {
+    icon: GoodIcon,
+    advice: "Looking good!",
+    desc: "It's a beautiful day to head out!",
+    color: "#008E9B",
+    backgroundColor: "rgba(0, 142, 155, 0.1)"
+  }
 };
 
 const ShouldIGo = () => {
@@ -59,30 +94,24 @@ const ShouldIGo = () => {
   const fetchAllWeatherData = async (latitude: string, longitude: string) => {
     setLoading(true);
     try {
-      const basePayload = {
-        latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude),
-      };
-      // update URL
-      const postRequest = (type: string) =>
-        fetch('http://localhost:5000/api/weather-gateway', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...basePayload, type })
-        }).then(res => res.json());
+      const weatherRes = await fetch(`http://localhost:3001/weather?latitude=${latitude}&longitude=${longitude}`);
+      const metadataRes = await fetch(`http://localhost:3001/weather-metadata?latitude=${latitude}&longitude=${longitude}&region=central`);
 
-      const [weather2hr, metadata] = await Promise.all([
-        postRequest('weather'),
-        postRequest('metadata')
-      ]);
+      if (!weatherRes.ok || !metadataRes.ok) {
+        throw new Error("Failed to fetch from new APIs");
+      }
+
+      const weather2hr = await weatherRes.json();
+      const metadata = await metadataRes.json();
+
       // update according to final schema
       setWeatherData({
-        temp: metadata.temp,
-        humidity: metadata.humidity,
-        windSpeed: metadata.windSpeed,
-        desc: weather2hr.forecast,
-        uvIndex: metadata.uvIndex,
-        psi: metadata.psi,
+        temp: metadata.temperature?.data?.temperature ?? 29,
+        humidity: 80, // API lacks humidity
+        windSpeed: 3.3, // API lacks wind speed
+        desc: weather2hr.data?.forecast ?? "Fair",
+        uvIndex: metadata.uv?.data?.value ?? 10,
+        psi: metadata.psi?.data?.psiTwentyFourHourly ?? 55,
       });
 
     } catch (error) {
@@ -92,7 +121,7 @@ const ShouldIGo = () => {
         temp: 29,
         humidity: 80,
         windSpeed: 3.3,
-        desc: "Cloudy",
+        desc: "Fair",
         uvIndex: 10,
         psi: 55
       });
@@ -111,6 +140,7 @@ const ShouldIGo = () => {
   const weatherIcon = getWeatherIcon(weatherData.desc);
   const uvInfo = getUVStatus(weatherData.uvIndex);
   const psiInfo = getPSIStatus(weatherData.psi);
+  const overviewInfo = overviewData(weatherData.uvIndex, weatherData.psi);
 
   useEffect(() => {
     fetchAllWeatherData(coords.lat, coords.lon);
@@ -236,9 +266,12 @@ const ShouldIGo = () => {
               </ul>
             )}
           </div>
+
+          {/* Current Conditions */}
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
             <p className="section-title">Current Conditions</p>
-            <div className="weather-placeholder" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '20px', height: '100%' }}>
+
+            <div className="weather-placeholder" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '30px', height: '100%', marginBottom: '10px' }}>
               <div style={{
                 display: 'flex',
                 flexWrap: 'wrap',
@@ -251,76 +284,84 @@ const ShouldIGo = () => {
 
                 {/* Icon & Temp Group */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ fontSize: '3.3rem' }}>{weatherIcon}</div>
-                  <div style={{ fontSize: '3rem', fontWeight: 'bold' }}>{weatherData.temp}°C</div>
+                  <div> <img src={weatherIcon} alt="Weather Icon" style={{ height: '3.5em', width: 'auto' }} /></div>
+                  <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#524e4e' }}>{weatherData.temp}°C</div>
                 </div>
 
                 {/* Description & Feels Like Group */}
-                <div style={{ display: 'flex', flexDirection: 'column', flex: '1', minWidth: '100px', gap: '5px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', flex: '1', minWidth: '100px', gap: '3px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '1.1rem', lineHeight: '1.2' }}>{weatherData.desc}</span>
+                    <span style={{ fontWeight: 'bold', fontSize: '1.1rem', lineHeight: '1.2', color: '#524e4e' }}>{weatherData.desc}</span>
                     <span style={{ cursor: 'help', fontSize: '0.85rem', color: '#666' }} title="A 2-hour Weather Forecast">ⓘ</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                    <span style={{ fontSize: '0.85rem', color: '#666' }}>Feels like {currentFeelsLike}°C</span>
+                    <span style={{ fontSize: '0.85rem', color: '#524e4e' }}>Feels like {currentFeelsLike}°C</span>
                     <span style={{ cursor: 'help', fontSize: '0.85rem', color: '#666' }} title="Calculated based on temperature, humidity, and wind speed using Steadman Apparent Temperature formula.">ⓘ</span>
                   </div>
                 </div>
-
               </div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', width: '100%', marginTop: '15px' }}>
-                <div style={{ textAlign: 'center', flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                    <p style={{ fontSize: '0.8rem', color: '#888' }}>UV INDEX</p>
-                    <p style={{ cursor: 'help', fontSize: '0.8rem', color: '#888' }} title="Measures how intense the Ultra Violet (UV) rays from the Sun are predicted to be.">ⓘ</p>
-                  </div>
-                  <div style={{ position: 'relative', width: '100px', margin: '0 auto' }}>
-                    {/* The SVG Arc */}
-                    <svg width="100" height="60" viewBox="0 0 100 60">
-                      {/* Background Gray Track */}
-                      <path
-                        d="M 10 50 A 40 40 0 0 1 90 50"
-                        fill="none"
-                        stroke="#eee"
-                        strokeWidth="8"
-                        strokeLinecap="round"
-                      />
-                      {/* Colored Progress Arc */}
-                      <path
-                        d="M 10 50 A 40 40 0 0 1 90 50"
-                        fill="none"
-                        stroke={uvInfo.color}
-                        strokeWidth="8"
-                        strokeLinecap="round"
-                        strokeDasharray="125.6"
-                        /* This math calculates how much of the arc to fill based on a scale of 1-12 */
-                        strokeDashoffset={125.6 - (125.6 * Math.min(weatherData.uvIndex, 12)) / 12}
-                        style={{ transition: 'stroke-dashoffset 0.5s ease' }}
-                      />
-                    </svg>
+            </div>
 
-                    {/* The Number in the center */}
-                    <div style={{
-                      position: 'absolute',
-                      top: '25px',
-                      left: '0',
-                      right: '0',
-                      fontSize: '1.2rem',
-                      fontWeight: 'bold',
-                      color: uvInfo.color
-                    }}>
-                      {weatherData.uvIndex}
+            <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', width: '100%', flexWrap: 'wrap' }}>
+              {/* UV Index */}
+              <div className="weather-placeholder" style={{ display: 'flex', flex: 1, justifyContent: 'center', paddingTop: '20px', paddingBottom: '20px', height: '100%', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                  <div style={{ textAlign: 'center', flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                      <p style={{ fontSize: '0.8rem', color: '#524e4e' }}>UV INDEX</p>
+                      <p style={{ cursor: 'help', fontSize: '0.8rem', color: '#888' }} title="Measures how intense the Ultra Violet (UV) rays from the Sun are predicted to be.">ⓘ</p>
+                    </div>
+                    <div style={{ position: 'relative', width: '100px', margin: '0 auto' }}>
+                      {/* The SVG Arc */}
+                      <svg width="100" height="60" viewBox="0 0 100 60">
+                        {/* Background Gray Track */}
+                        <path
+                          d="M 10 50 A 40 40 0 0 1 90 50"
+                          fill="none"
+                          stroke="#eee"
+                          strokeWidth="8"
+                          strokeLinecap="round"
+                        />
+                        {/* Colored Progress Arc */}
+                        <path
+                          d="M 10 50 A 40 40 0 0 1 90 50"
+                          fill="none"
+                          stroke={uvInfo.color}
+                          strokeWidth="8"
+                          strokeLinecap="round"
+                          strokeDasharray="125.6"
+                          /* This math calculates how much of the arc to fill based on a scale of 1-12 */
+                          strokeDashoffset={125.6 - (125.6 * Math.min(weatherData.uvIndex, 12)) / 12}
+                          style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+                        />
+                      </svg>
+
+                      {/* The Number in the center */}
+                      <div style={{
+                        position: 'absolute',
+                        top: '25px',
+                        left: '0',
+                        right: '0',
+                        fontSize: '1.2rem',
+                        fontWeight: 'bold',
+                        color: uvInfo.color
+                      }}>
+                        {weatherData.uvIndex}
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: uvInfo.color, marginTop: '5px' }}>
+                      {uvInfo.word}
                     </div>
                   </div>
-
-                  <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: uvInfo.color, marginTop: '5px' }}>
-                    {uvInfo.word}
-                  </div>
                 </div>
+              </div>
 
-                <div style={{ textAlign: 'center', flex: 1 }}>
+              {/* PSI */}
+              <div className="weather-placeholder" style={{ display: 'flex', flex: 1, justifyContent: 'center', paddingTop: '20px', paddingBottom: '20px', height: '100%' }}>
+                <div style={{ textAlign: 'center', flex: 1, alignItems: 'center' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                    <p style={{ fontSize: '0.8rem', color: '#888' }}>PSI</p>
+                    <p style={{ fontSize: '0.8rem', color: '#524e4e' }}>PSI</p>
                     <p style={{ cursor: 'help', fontSize: '0.8rem', color: '#888' }} title="Pollutant Standards Index: Measures air quality, taking into account several pollutants.">ⓘ</p>
                   </div>
                   {/* Arc will go here */}
@@ -351,6 +392,18 @@ const ShouldIGo = () => {
               </div>
             </div>
           </div>
+
+          {/* Overview */}
+          <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <p className="section-title">Overview</p>
+            <div className="overview-placeholder" style={{ flex: 1, minHeight: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#524e4e', outline: `2px solid ${overviewInfo.color}`, backgroundColor: overviewInfo.backgroundColor, borderRadius: '12px', padding: '15px', textAlign: 'center' }}>
+              <div> <img src={overviewInfo.icon} alt="Overview Icon" style={{ height: '2em', width: 'auto', marginRight: '15px' }} /></div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'flex-start' }}>
+                <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: overviewInfo.color }}>{overviewInfo.advice}</span>
+                <span style={{ fontSize: '0.9rem', color: overviewInfo.color }}>{overviewInfo.desc}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Right panel — map */}
@@ -369,17 +422,19 @@ const ShouldIGo = () => {
 
       {/* Bottom email update bar */}
       <div className="card update-bar">
-        <div className="update-bar-text">
-          <h3>Stay Updated</h3>
+        <div className="update-bar-text" style={{ flex: 1 }}>
+          <h3>STAY UPDATED</h3>
           <p>Get traffic &amp; weather alerts for your route straight to your inbox.</p>
         </div>
-        <div className="update-bar-controls">
+        <div className="email-placeholder">
           <input
             className="input-field"
             type="email"
-            placeholder="Your email address"
-            style={{ minWidth: 220 }}
+            placeholder="Enter your email address"
+            style={{ minWidth: 400 }}
           />
+        </div>
+        <div className="update-bar-controls">
           <select
             className="select-field"
             value={updateHour}
@@ -388,6 +443,7 @@ const ShouldIGo = () => {
             <option value="1">1 hour later</option>
             <option value="2">2 hours later</option>
             <option value="4">4 hours later</option>
+            <option value='8'>8 hours later</option>
           </select>
           <button className="btn-primary">Notify Me</button>
         </div>
