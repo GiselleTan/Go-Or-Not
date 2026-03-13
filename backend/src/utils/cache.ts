@@ -3,6 +3,7 @@ import {
   dynamoDb,
   WEATHER_METADATA_CACHE_TABLE,
   WEATHER_2HR_CACHE_TABLE,
+  CARPARK_CACHE_TABLE,
 } from './dynamodb.js';
 import type { CachedItem, ServiceResult } from '../types/index.js';
 
@@ -91,6 +92,57 @@ export const with2hrWeatherCache = async <T>(
     new PutCommand({
       TableName: WEATHER_2HR_CACHE_TABLE,
       Item: { pk, sk, data, timestamp: now, ttl },
+    }),
+  );
+
+  return { data, cached: false, fetchedAt: new Date(now).toISOString() };
+};
+
+export const withCarparkCache = async <T>(
+  pk: string,
+  ttlMinutes: number,
+  label: string,
+  fetch: () => Promise<T>,
+): Promise<ServiceResult<T>> => {
+  const now = Date.now();
+
+  const cachedResult = await dynamoDb.send(
+    new GetCommand({
+      TableName: CARPARK_CACHE_TABLE,
+      Key: { id: pk },
+    }),
+  );
+
+  if (cachedResult.Item) {
+    const cached = cachedResult.Item as CachedItem<T>;
+    const ageMinutes = (now - cached.timestamp) / 1000 / 60;
+
+    if (ageMinutes < ttlMinutes) {
+      console.log(
+        `[Carpark] Cache HIT for ${label} - age: ${ageMinutes.toFixed(2)}m`,
+      );
+      return {
+        data: cached.data,
+        cached: true,
+        cachedAt: new Date(cached.timestamp).toISOString(),
+      };
+    }
+  }
+
+  console.log(`[Carpark] Cache MISS for ${label} - calling API`);
+  const data = await fetch();
+
+  const ttl = Math.floor(now / 1000) + ttlMinutes * 60;
+
+  await dynamoDb.send(
+    new PutCommand({
+      TableName: CARPARK_CACHE_TABLE,
+      Item: {
+        id: pk,
+        data,
+        timestamp: now,
+        ttl,
+      },
     }),
   );
 

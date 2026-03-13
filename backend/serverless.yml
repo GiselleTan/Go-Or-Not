@@ -16,6 +16,8 @@ provider:
     NODE_ENV: ${self:provider.stage}
     WEATHER_METADATA_CACHE_TABLE: ${self:custom.weatherMetadataTableName}
     WEATHER_CACHE_TABLE: ${self:custom.weather2hrTableName}
+    CARPARK_METADATA_TABLE: ${self:custom.carparkMetadataTableName}
+    CARPARK_CACHE_TABLE: ${self:custom.carparkCacheTableName}
     IS_OFFLINE: ${env:IS_OFFLINE, 'true'}
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1'
   iam:
@@ -71,6 +73,21 @@ functions:
             schemas:
               application/json: ${file(src/handlers/get2hrWeather/schema.json)}
 
+  getParking:
+    handler: src/handlers/getParking/index.handler
+    events:
+      - http:
+          path: /parking
+          method: GET
+          cors: true
+          request:
+            parameters:
+              querystrings:
+                latitude: true
+                longitude: true
+            schemas:
+              application/json: ${file(src/handlers/getParking/schema.json)}
+
 plugins:
   - serverless-esbuild
   - serverless-offline
@@ -97,6 +114,8 @@ custom:
     noPrependStageInUrl: true
   weatherMetadataTableName: weather-metadata-cache-${self:provider.stage}
   weather2hrTableName: weather-2hr-cache-${self:provider.stage}
+  carparkMetadataTableName: carpark-metadata-${self:provider.stage}
+  carparkCacheTableName: carpark-availability-cache-${self:provider.stage}
 
 resources:
   Resources:
@@ -137,6 +156,33 @@ resources:
         TimeToLiveSpecification:
           AttributeName: ttl
           Enabled: true
+
+    CarparkMetadataTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.carparkMetadataTableName}
+        AttributeDefinitions:
+          - AttributeName: carpark_number
+            AttributeType: S
+        KeySchema:
+          - AttributeName: carpark_number
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    CarparkCacheTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.carparkCacheTableName}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
+        BillingMode: PAY_PER_REQUEST
 
 package:
   individually: true
