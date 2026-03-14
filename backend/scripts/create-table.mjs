@@ -33,7 +33,9 @@ for (const tableProps of tableDefinitions) {
     .replace(/\$\{self:provider\.stage\}/g, stage)
     .replace(/\$\{self:custom\.tableName\}/g, `go-or-not-${stage}`)
     .replace(/\$\{self:custom\.weatherMetadataTableName\}/g, `weather-metadata-cache-${stage}`)
-    .replace(/\$\{self:custom\.weather2hrTableName\}/g, `weather-2hr-cache-${stage}`);
+    .replace(/\$\{self:custom\.weather2hrTableName\}/g, `weather-2hr-cache-${stage}`)
+    .replace(/\$\{self:custom\.carparkMetadataTableName\}/g, `carpark-metadata-${stage}`)
+    .replace(/\$\{self:custom\.carparkCacheTableName\}/g, `carpark-availability-cache-${stage}`);
 
   try {
     await client.send(
@@ -49,7 +51,7 @@ for (const tableProps of tableDefinitions) {
     console.log(`✅ Table '${tableName}' created successfully!`);
 
     // Enable TTL for local environment
-    await client.send(
+    /*await client.send(
       new UpdateTimeToLiveCommand({
         TableName: tableName,
         TimeToLiveSpecification: {
@@ -58,7 +60,22 @@ for (const tableProps of tableDefinitions) {
         },
       })
     );
-    console.log(`TTL enabled on 'ttl' attribute for '${tableName}'`);
+    console.log(`TTL enabled on 'ttl' attribute for '${tableName}'`);*/
+
+    if (tableProps.TimeToLiveSpecification && tableProps.TimeToLiveSpecification.Enabled) {
+      await client.send(
+        new UpdateTimeToLiveCommand({
+          TableName: tableName,
+          TimeToLiveSpecification: {
+            AttributeName: tableProps.TimeToLiveSpecification.AttributeName,
+            Enabled: true,
+          },
+        })
+      );
+      console.log(`TTL enabled on '${tableProps.TimeToLiveSpecification.AttributeName}' for '${tableName}'`);
+    } else {
+      console.log(`TTL not required for '${tableName}'`);
+    }
     
   } catch (error) {
     if (error.name === 'ResourceInUseException') {
