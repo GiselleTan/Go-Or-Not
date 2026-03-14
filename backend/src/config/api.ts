@@ -5,4 +5,5 @@ export const API_URLS = {
   psi: `${BASE_URL}/psi`,
   uv: `${BASE_URL}/uv`,
   twoHourForecast: `${BASE_URL}/two-hr-forecast`,
+  carpark: `https://api.data.gov.sg/v1/transport/carpark-availability`,
 } as const;

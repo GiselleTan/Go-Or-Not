@@ -8,7 +8,8 @@
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "dynamodb:create-table": "node scripts/create-table.mjs",
-    "dev": "npm run docker:up && npm run dynamodb:create-table && serverless offline start",
+    "dynamodb:seed": "node scripts/upload.mjs",
+    "dev": "npm run docker:up && npm run dynamodb:create-table && npm run dynamodb:seed && serverless offline start",
     "build": "serverless package",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
@@ -44,6 +45,9 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.996.0",
     "@aws-sdk/lib-dynamodb": "^3.996.0",
-    "dayjs": "^1.11.19"
+    "csv-parse": "^6.1.0",
+    "dayjs": "^1.11.19",
+    "proj4": "^2.20.4",
+    "svy21": "^1.0.0"
   }
 }
