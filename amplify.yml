@@ -1,10 +1,7 @@
 version: 1
 
-# ---------------------------------------------------------------------------
 # Backend (Serverless Framework)
-# Runs on every branch push.  The stage is derived from the branch name so
-# that  main → dev   and   prod → prod   deploy independently.
-# ---------------------------------------------------------------------------
+# stage is derived from the branch name:main → dev and prod → prod
 backend:
   phases:
     preBuild:
@@ -30,11 +27,11 @@ frontend:
   phases:
     preBuild:
       commands:
-        - cd frontend
+        - cd $CODEBUILD_SRC_DIR/frontend
         - npm ci
     build:
       commands:
-        - cd frontend
+        - cd $CODEBUILD_SRC_DIR/frontend
         - npm run build
 
   artifacts:
@@ -49,8 +46,6 @@ frontend:
       - backend/node_modules/**/*
 
   # Cache-Control headers for all files.
-  # NOTE: SPA rewrite (/* → /index.html with 200) must be configured in
-  # Amplify Console → App settings → Rewrites and redirects.
   customHeaders:
     - pattern: '**/*'
       headers:
