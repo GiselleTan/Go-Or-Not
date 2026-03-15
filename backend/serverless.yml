@@ -53,12 +53,11 @@ provider:
           Action:
             - lambda:InvokeFunction
           Resource:
-            - Fn::GetAtt: [GetTemperatureLambdaFunction, Arn]
-            - Fn::GetAtt: [GetWeatherMetadataLambdaFunction, Arn]
-            - Fn::GetAtt: [Get2hrWeatherLambdaFunction, Arn]
-            # - Fn::GetAtt: [GetTrafficImagesLambdaFunction, Arn]
-            - Fn::GetAtt: [GetParkingLambdaFunction, Arn]
-            - Fn::GetAtt: [GetRecommendationLambdaFunction, Arn]
+            - Fn::Sub: 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:go-or-not-backend-${self:provider.stage}-getTemperature'
+            - Fn::Sub: 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:go-or-not-backend-${self:provider.stage}-getWeatherMetadata'
+            - Fn::Sub: 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:go-or-not-backend-${self:provider.stage}-get2hrWeather'
+            - Fn::Sub: 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:go-or-not-backend-${self:provider.stage}-getParking'
+            - Fn::Sub: 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:go-or-not-backend-${self:provider.stage}-getRecommendation'
         - Effect: Allow
           Action:
             - ses:SendEmail
