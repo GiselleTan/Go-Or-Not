@@ -143,8 +143,6 @@ functions:
             parameters:
               querystrings:
                 highway: true
-            schemas:
-              application/json: ${file(src/handlers/getTrafficImages/schema.json)}
 
   getRecommendation:
     handler: src/handlers/getRecommendation/index.handler
