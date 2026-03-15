@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CloudyIcon from '../assets/cloudy.svg';
 import ThunderIcon from '../assets/thunder.svg';
 import RainIcon from '../assets/rain.svg';
