@@ -32,7 +32,7 @@ for (const tableProps of tableDefinitions) {
   const tableName = tableProps.TableName
     .replace(/\$\{self:provider\.stage\}/g, stage)
     .replace(/\$\{self:custom\.tableName\}/g, `go-or-not-${stage}`)
-    .replace(/\$\{self:custom\.weatherMetadataTableName\}/g, `weather-metadata-cache-${stage}`)
+    .replace(/\$\{self:custom\.cacheTableName\}/g, `cache-${stage}`)
     .replace(/\$\{self:custom\.weather2hrTableName\}/g, `weather-2hr-cache-${stage}`)
     .replace(/\$\{self:custom\.carparkMetadataTableName\}/g, `carpark-metadata-${stage}`)
     .replace(/\$\{self:custom\.carparkCacheTableName\}/g, `carpark-availability-cache-${stage}`)

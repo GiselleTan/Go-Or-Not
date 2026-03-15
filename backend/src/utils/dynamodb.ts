@@ -19,6 +19,6 @@ const client = new DynamoDBClient(
 export const dynamoDb = DynamoDBDocumentClient.from(client);
 
 export const TABLE_NAME = process.env.TABLE_NAME || 'go-or-not-dev';
-export const WEATHER_METADATA_CACHE_TABLE = 'weather-metadata-cache-dev';
+export const CACHE_TABLE = process.env.CACHE_TABLE || 'cache-dev';
 export const WEATHER_2HR_CACHE_TABLE = process.env.WEATHER_CACHE_TABLE!;
 export const CARPARK_CACHE_TABLE = process.env.CARPARK_CACHE_TABLE!;

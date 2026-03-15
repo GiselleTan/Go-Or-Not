@@ -1,8 +1,5 @@
 import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
-import {
-  dynamoDb,
-  WEATHER_METADATA_CACHE_TABLE,
-} from '../../utils/dynamodb.js';
+import { dynamoDb, CACHE_TABLE } from '../../utils/dynamodb.js';
 import { withCache } from '../../utils/cache.js';
 import { API_URLS } from '../../config/api.js';
 import type { ServiceResult } from '../../types/index.js';
@@ -87,74 +84,4 @@ export const getPsiByRegion = async (
       return buildReading(region, regionMeta, latestItem);
     },
   });
-};
-
-export const getAllPsiRegions = async (): Promise<
-  ServiceResult<PsiReading[]>
-> => {
-  const now = Date.now();
-
-  // Check if all regions are cached
-  const cachedResults = await Promise.all(
-    REGIONS.map((r) =>
-      dynamoDb.send(
-        new GetCommand({
-          TableName: WEATHER_METADATA_CACHE_TABLE,
-          Key: { pk: CACHE_PK, sk: r },
-        }),
-      ),
-    ),
-  );
-
-  type CachedRow = {
-    pk: string;
-    sk: string;
-    data: PsiReading;
-    timestamp: number;
-    ttl: number;
-  };
-
-  const allFresh = cachedResults.every((result) => {
-    if (!result.Item) return false;
-    const age = (now - (result.Item as CachedRow).timestamp) / 1000 / 60;
-    return age < CACHE_TTL_MINUTES;
-  });
-
-  if (allFresh) {
-    console.log('Cache HIT for all PSI regions');
-    const first = cachedResults[0]!.Item as CachedRow;
-    return {
-      data: cachedResults.map((r) => (r.Item as CachedRow).data),
-      cached: true,
-      cachedAt: new Date(first.timestamp).toISOString(),
-    };
-  }
-
-  // Single API call, cache all regions
-  console.log('Cache MISS for all PSI regions - fetching from API');
-  const apiData = await fetchPsiFromApi();
-  const latestItem = apiData.data.items[0]!;
-
-  const ttl = Math.floor(now / 1000) + CACHE_TTL_MINUTES * 60;
-
-  const allReadings = await Promise.all(
-    apiData.data.regionMetadata.map(async (regionMeta) => {
-      const r = regionMeta.name;
-      const reading = buildReading(r, regionMeta, latestItem);
-      await dynamoDb.send(
-        new PutCommand({
-          TableName: WEATHER_METADATA_CACHE_TABLE,
-          Item: { pk: CACHE_PK, sk: r, data: reading, timestamp: now, ttl },
-        }),
-      );
-      return reading;
-    }),
-  );
-
-  console.log('Cached all PSI regions');
-  return {
-    data: allReadings,
-    cached: false,
-    fetchedAt: new Date(now).toISOString(),
-  };
 };
