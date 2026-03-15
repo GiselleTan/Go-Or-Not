@@ -35,7 +35,8 @@ for (const tableProps of tableDefinitions) {
     .replace(/\$\{self:custom\.weatherMetadataTableName\}/g, `weather-metadata-cache-${stage}`)
     .replace(/\$\{self:custom\.weather2hrTableName\}/g, `weather-2hr-cache-${stage}`)
     .replace(/\$\{self:custom\.carparkMetadataTableName\}/g, `carpark-metadata-${stage}`)
-    .replace(/\$\{self:custom\.carparkCacheTableName\}/g, `carpark-availability-cache-${stage}`);
+    .replace(/\$\{self:custom\.carparkCacheTableName\}/g, `carpark-availability-cache-${stage}`)
+    .replace(/\$\{self:custom\.notificationsTableName\}/g, `notifications-${stage}`);
 
   try {
     await client.send(
