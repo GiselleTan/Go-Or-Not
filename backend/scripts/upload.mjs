@@ -16,7 +16,7 @@ const TABLE_NAME = "carpark-metadata-dev";
 
 async function upload() {
   try {
-    const csvData = fs.readFileSync('./HDBCarparkInformation.csv', 'utf-8');
+    const csvData = fs.readFileSync('./src/config/HDBCarparkInformation.csv', 'utf-8');
     const records = parse(csvData, { columns: true, skip_empty_lines: true });
 
     console.log(`🚀 Seeding ${records.length} carparks into ${TABLE_NAME}...`);
