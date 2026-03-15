@@ -84,7 +84,7 @@ const ShouldIGo = () => {
     temp: 29,
     humidity: 80,
     windSpeed: 3.3,
-    desc: "Cloudy",
+    desc: "Fair",
     uvIndex: 10,
     psi: 55
   });
@@ -292,11 +292,17 @@ const ShouldIGo = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', flex: '1', minWidth: '100px', gap: '3px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                     <span style={{ fontWeight: 'bold', fontSize: '1.1rem', lineHeight: '1.2', color: '#524e4e' }}>{weatherData.desc}</span>
-                    <span style={{ cursor: 'help', fontSize: '0.85rem', color: '#666' }} title="A 2-hour Weather Forecast">ⓘ</span>
+                    <div className="tooltip-container">
+                      <span>ⓘ</span>
+                      <span className="tooltip-text">A 2-hour Weather Forecast</span>
+                    </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                     <span style={{ fontSize: '0.85rem', color: '#524e4e' }}>Feels like {currentFeelsLike}°C</span>
-                    <span style={{ cursor: 'help', fontSize: '0.85rem', color: '#666' }} title="Calculated based on temperature, humidity, and wind speed using Steadman Apparent Temperature formula.">ⓘ</span>
+                    <div className="tooltip-container">
+                      <span>ⓘ</span>
+                      <span className="tooltip-text">Calculated based on temperature, humidity, and wind speed using Steadman Apparent Temperature formula.</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -309,7 +315,10 @@ const ShouldIGo = () => {
                   <div style={{ textAlign: 'center', flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                       <p style={{ fontSize: '0.8rem', color: '#524e4e' }}>UV INDEX</p>
-                      <p style={{ cursor: 'help', fontSize: '0.8rem', color: '#888' }} title="Measures how intense the Ultra Violet (UV) rays from the Sun are predicted to be.">ⓘ</p>
+                      <div className="tooltip-container">
+                        <span>ⓘ</span>
+                        <span className="tooltip-text">Measures how intense the Ultra Violet (UV) rays from the Sun are predicted to be.</span>
+                      </div>
                     </div>
                     <div style={{ position: 'relative', width: '100px', margin: '0 auto' }}>
                       {/* The SVG Arc */}
@@ -362,7 +371,10 @@ const ShouldIGo = () => {
                 <div style={{ textAlign: 'center', flex: 1, alignItems: 'center' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                     <p style={{ fontSize: '0.8rem', color: '#524e4e' }}>PSI</p>
-                    <p style={{ cursor: 'help', fontSize: '0.8rem', color: '#888' }} title="Pollutant Standards Index: Measures air quality, taking into account several pollutants.">ⓘ</p>
+                    <div className="tooltip-container">
+                      <span>ⓘ</span>
+                      <span className="tooltip-text">Pollutant Standards Index: Measures air quality, taking into account several pollutants.</span>
+                    </div>
                   </div>
                   {/* Arc will go here */}
                   <div style={{ position: 'relative', width: '100px', margin: '0 auto' }}>
@@ -396,8 +408,8 @@ const ShouldIGo = () => {
           {/* Overview */}
           <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <p className="section-title">Overview</p>
-            <div className="overview-placeholder" style={{ flex: 1, minHeight: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#524e4e', outline: `2px solid ${overviewInfo.color}`, backgroundColor: overviewInfo.backgroundColor, borderRadius: '12px', padding: '15px', textAlign: 'center' }}>
-              <div> <img src={overviewInfo.icon} alt="Overview Icon" style={{ height: '2em', width: 'auto', marginRight: '15px' }} /></div>
+            <div className="overview-placeholder" style={{ flex: 1, minHeight: 0, display: 'flex', justifyContent: 'left', alignItems: 'left', color: '#524e4e', outline: `2px solid ${overviewInfo.color}`, backgroundColor: overviewInfo.backgroundColor, borderRadius: '12px', padding: '15px', textAlign: 'left' }}>
+              <div style={{ marginLeft: '20px' }}> <img src={overviewInfo.icon} alt="Overview Icon" style={{ height: '2em', width: 'auto', marginRight: '15px', marginTop: '5px' }} /></div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'flex-start' }}>
                 <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: overviewInfo.color }}>{overviewInfo.advice}</span>
                 <span style={{ fontSize: '0.9rem', color: overviewInfo.color }}>{overviewInfo.desc}</span>
