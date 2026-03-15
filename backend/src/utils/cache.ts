@@ -1,7 +1,7 @@
 import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import {
   dynamoDb,
-  WEATHER_METADATA_CACHE_TABLE,
+  CACHE_TABLE,
   WEATHER_2HR_CACHE_TABLE,
   CARPARK_CACHE_TABLE,
 } from './dynamodb.js';
@@ -12,18 +12,19 @@ interface WithCacheOptions<T> {
   sk: string;
   ttlMinutes: number;
   label: string;
+  tableName?: string;
   fetch: () => Promise<T>;
 }
 
 export const withCache = async <T>(
   options: WithCacheOptions<T>,
 ): Promise<ServiceResult<T>> => {
-  const { pk, sk, ttlMinutes, label, fetch } = options;
+  const { pk, sk, ttlMinutes, label, tableName = CACHE_TABLE, fetch } = options;
   const now = Date.now();
 
   const cachedResult = await dynamoDb.send(
     new GetCommand({
-      TableName: WEATHER_METADATA_CACHE_TABLE,
+      TableName: tableName,
       Key: { pk, sk },
     }),
   );
@@ -48,7 +49,7 @@ export const withCache = async <T>(
   const ttl = Math.floor(now / 1000) + ttlMinutes * 60;
   await dynamoDb.send(
     new PutCommand({
-      TableName: WEATHER_METADATA_CACHE_TABLE,
+      TableName: tableName,
       Item: { pk, sk, data, timestamp: now, ttl },
     }),
   );

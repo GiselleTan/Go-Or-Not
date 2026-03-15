@@ -23,7 +23,6 @@ const lambdaClient = new LambdaClient({});
 const WEATHER_METADATA_FUNCTION_NAME =
   process.env.WEATHER_METADATA_FUNCTION_NAME ?? '';
 const WEATHER_2HR_FUNCTION_NAME = process.env.WEATHER_2HR_FUNCTION_NAME ?? '';
-const TRAFFIC_IMAGES_FUNCTION_NAME = process.env.TRAFFIC_IMAGES_FUNCTION_NAME ?? '';
 const CARPARK_FUNCTION_NAME = process.env.CARPARK_FUNCTION_NAME ?? '';
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY ?? '';
 
@@ -84,7 +83,9 @@ const getCoordinatesFromPostalCode = async (
   }
 
   const body = (await response.json()) as {
-    results?: Array<{ geometry?: { location?: { lat?: number; lng?: number } } }>;
+    results?: Array<{
+      geometry?: { location?: { lat?: number; lng?: number } };
+    }>;
     status?: string;
   };
 
@@ -107,7 +108,9 @@ const scoreWeather = (forecastText: string): number => {
   return 0.55;
 };
 
-const scoreParking = (parking: Array<{ total_lots?: number; lots_available?: number }>): number => {
+const scoreParking = (
+  parking: Array<{ total_lots?: number; lots_available?: number }>,
+): number => {
   if (parking.length === 0) {
     return 0.2;
   }
@@ -130,13 +133,6 @@ const scoreParking = (parking: Array<{ total_lots?: number; lots_available?: num
 
   const sum = ratios.reduce((acc, current) => acc + current, 0);
   return sum / ratios.length;
-};
-
-const scoreTraffic = (cameraCount: number): number => {
-  if (cameraCount >= 4) return 0.85;
-  if (cameraCount >= 2) return 0.7;
-  if (cameraCount >= 1) return 0.55;
-  return 0.3;
 };
 
 const toRecommendation = (score: number): 'GO' | 'NO_GO' =>
@@ -178,13 +174,11 @@ export const handler = async (
       },
     };
 
-    const [weatherMetadataRaw, twoHrRaw, trafficRaw, parkingRaw] =
-      await Promise.all([
-        invokeLambda(WEATHER_METADATA_FUNCTION_NAME, lambdaEvent),
-        invokeLambda(WEATHER_2HR_FUNCTION_NAME, lambdaEvent),
-        invokeLambda(TRAFFIC_IMAGES_FUNCTION_NAME, lambdaEvent),
-        invokeLambda(CARPARK_FUNCTION_NAME, lambdaEvent),
-      ]);
+    const [weatherMetadataRaw, twoHrRaw, parkingRaw] = await Promise.all([
+      invokeLambda(WEATHER_METADATA_FUNCTION_NAME, lambdaEvent),
+      invokeLambda(WEATHER_2HR_FUNCTION_NAME, lambdaEvent),
+      invokeLambda(CARPARK_FUNCTION_NAME, lambdaEvent),
+    ]);
 
     const weatherMetadata = weatherMetadataRaw as {
       temperature?: unknown;
@@ -192,15 +186,17 @@ export const handler = async (
       uv?: unknown;
     };
 
-    const twoHr = twoHrRaw as { forecast?: string; area?: string; timestamp?: string };
-    const traffic = trafficRaw as { cameras?: Array<unknown>; timestamp?: string };
+    const twoHr = twoHrRaw as {
+      forecast?: string;
+      area?: string;
+      timestamp?: string;
+    };
     const parking = parkingRaw as {
       parking?: Array<{ total_lots?: number; lots_available?: number }>;
     };
 
     const weatherScore = scoreWeather(twoHr.forecast ?? '');
     const parkingScore = scoreParking(parking.parking ?? []);
-    const trafficScore = scoreTraffic(traffic.cameras?.length ?? 0);
 
     const weights = {
       weather: 0.45,
@@ -209,9 +205,7 @@ export const handler = async (
     };
 
     const compositeScore =
-      weatherScore * weights.weather +
-      parkingScore * weights.parking +
-      trafficScore * weights.traffic;
+      weatherScore * weights.weather + parkingScore * weights.parking;
 
     const recommendation = toRecommendation(compositeScore);
 
@@ -236,7 +230,6 @@ export const handler = async (
         details: {
           weatherMetadata,
           weather2hr: twoHr,
-          traffic,
           parking,
         },
       }),

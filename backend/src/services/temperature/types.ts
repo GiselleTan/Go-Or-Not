@@ -7,7 +7,25 @@ export interface TemperatureReading {
   readingUnit: string;
 }
 
-export interface TemperatureApiResponse {
+export interface HumidityReading {
+  stationId: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  humidity: number;
+  readingUnit: string;
+}
+
+export interface WindReading {
+  stationId: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  windSpeed: number;
+  readingUnit: string;
+}
+
+export interface GeneralApiResponse {
   code: number;
   errorMsg: string;
   data: {

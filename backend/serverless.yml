@@ -14,7 +14,7 @@ provider:
   timeout: 30
   environment:
     NODE_ENV: ${self:provider.stage}
-    WEATHER_METADATA_CACHE_TABLE: ${self:custom.weatherMetadataTableName}
+    CACHE_TABLE: ${self:custom.cacheTableName}
     WEATHER_CACHE_TABLE: ${self:custom.weather2hrTableName}
     CARPARK_METADATA_TABLE: ${self:custom.carparkMetadataTableName}
     CARPARK_CACHE_TABLE: ${self:custom.carparkCacheTableName}
@@ -43,7 +43,7 @@ provider:
             - dynamodb:UpdateItem
             - dynamodb:DeleteItem
           Resource:
-            - Fn::GetAtt: [WeatherMetadataCacheTable, Arn]
+            - Fn::GetAtt: [CacheTable, Arn]
             - Fn::GetAtt: [Weather2hrCacheTable, Arn]
             - Fn::GetAtt: [CarparkMetadataTable, Arn]
             - Fn::GetAtt: [CarparkCacheTable, Arn]
@@ -132,18 +132,17 @@ functions:
             schemas:
               application/json: ${file(src/handlers/getParking/schema.json)}
 
-  # getTrafficImages:
-  #   handler: src/handlers/getTrafficImages/index.handler
-  #   events:
-  #     - http:
-  #         path: /traffic-images
-  #         method: GET
-  #         cors: true
-  #         request:
-  #           parameters:
-  #             querystrings:
-  #               latitude: true
-  #               longitude: true
+  getTrafficImages:
+    handler: src/handlers/getTrafficImages/index.handler
+    events:
+      - http:
+          path: /traffic-images
+          method: GET
+          cors: true
+          request:
+            parameters:
+              querystrings:
+                highway: true
 
   getRecommendation:
     handler: src/handlers/getRecommendation/index.handler
@@ -201,7 +200,7 @@ custom:
     lambdaPort: 3003
     reloadHandler: true
     noPrependStageInUrl: true
-  weatherMetadataTableName: weather-metadata-cache-${self:provider.stage}
+  cacheTableName: cache-${self:provider.stage}
   weather2hrTableName: weather-2hr-cache-${self:provider.stage}
   carparkMetadataTableName: carpark-metadata-${self:provider.stage}
   carparkCacheTableName: carpark-availability-cache-${self:provider.stage}
@@ -210,10 +209,10 @@ custom:
 
 resources:
   Resources:
-    WeatherMetadataCacheTable:
+    CacheTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:custom.weatherMetadataTableName}
+        TableName: ${self:custom.cacheTableName}
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
           - AttributeName: pk
@@ -348,10 +347,3 @@ resources:
         Principal: scheduler.amazonaws.com
         SourceArn:
           Fn::GetAtt: [CheckerSchedule, Arn]
-
-package:
-  individually: true
-  patterns:
-    - '!node_modules/**'
-    - '!src/**'
-    - '!.git/**'

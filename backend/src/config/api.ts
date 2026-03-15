@@ -2,6 +2,8 @@ const BASE_URL = 'https://api-open.data.gov.sg/v2/real-time/api';
 
 export const API_URLS = {
   airTemperature: `${BASE_URL}/air-temperature`,
+  airHumidity: `${BASE_URL}/relative-humidity`,
+  windSpeed: `${BASE_URL}/wind-speed`,
   psi: `${BASE_URL}/psi`,
   uv: `${BASE_URL}/uv`,
   twoHourForecast: `${BASE_URL}/two-hr-forecast`,
