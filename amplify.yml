@@ -1,0 +1,53 @@
+version: 1
+
+# ---------------------------------------------------------------------------
+# Backend (Serverless Framework)
+# Runs on every branch push.  The stage is derived from the branch name so
+# that  main → dev   and   prod → prod   deploy independently.
+# ---------------------------------------------------------------------------
+backend:
+  phases:
+    preBuild:
+      commands:
+        - cd backend
+        - npm ci
+    build:
+      commands:
+        - |
+          if [ "$AWS_BRANCH" = "prod" ]; then
+            STAGE=prod
+          else
+            STAGE=dev
+          fi
+        - npx serverless deploy --stage $STAGE --region ap-southeast-1 --param="licenseKey=$SERVERLESS_LICENSE_KEY"
+
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - cd frontend
+        - npm ci
+    build:
+      commands:
+        - cd frontend
+        - npm run build
+
+  artifacts:
+    # Vite outputs to frontend/dist
+    baseDirectory: frontend/dist
+    files:
+      - '**/*'
+
+  cache:
+    paths:
+      - frontend/node_modules/**/*
+      - backend/node_modules/**/*
+
+  # Cache-Control headers for all files.
+  # NOTE: SPA rewrite (/* → /index.html with 200) must be configured in
+  # Amplify Console → App settings → Rewrites and redirects.
+  customHeaders:
+    - pattern: '**/*'
+      headers:
+        - key: Cache-Control
+          value: 'no-store'

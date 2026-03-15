@@ -18,7 +18,18 @@ provider:
     WEATHER_CACHE_TABLE: ${self:custom.weather2hrTableName}
     CARPARK_METADATA_TABLE: ${self:custom.carparkMetadataTableName}
     CARPARK_CACHE_TABLE: ${self:custom.carparkCacheTableName}
-    IS_OFFLINE: ${env:IS_OFFLINE, 'true'}
+    NOTIFICATIONS_TABLE: ${self:custom.notificationsTableName}
+    TRAFFIC_IMAGES_API_URL: ${self:custom.trafficImagesApiUrl}
+    GOOGLE_MAPS_API_KEY: ${env:GOOGLE_MAPS_API_KEY, ''}
+    SENDER_EMAIL: ${env:SENDER_EMAIL, ''}
+    APP_BASE_URL: ${env:APP_BASE_URL, ''}
+    TEMPERATURE_FUNCTION_NAME: ${self:service}-${self:provider.stage}-getTemperature
+    WEATHER_METADATA_FUNCTION_NAME: ${self:service}-${self:provider.stage}-getWeatherMetadata
+    WEATHER_2HR_FUNCTION_NAME: ${self:service}-${self:provider.stage}-get2hrWeather
+    # TRAFFIC_IMAGES_FUNCTION_NAME: ${self:service}-${self:provider.stage}-getTrafficImages
+    CARPARK_FUNCTION_NAME: ${self:service}-${self:provider.stage}-getParking
+    ORCHESTRATOR_FUNCTION_NAME: ${self:service}-${self:provider.stage}-getRecommendation
+    IS_OFFLINE: ${env:IS_OFFLINE, 'false'}
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1'
   iam:
     role:
@@ -31,7 +42,28 @@ provider:
             - dynamodb:PutItem
             - dynamodb:UpdateItem
             - dynamodb:DeleteItem
-          Resource: 'arn:aws:dynamodb:${self:provider.region}:*:table/*'
+          Resource:
+            - Fn::GetAtt: [WeatherMetadataCacheTable, Arn]
+            - Fn::GetAtt: [Weather2hrCacheTable, Arn]
+            - Fn::GetAtt: [CarparkMetadataTable, Arn]
+            - Fn::GetAtt: [CarparkCacheTable, Arn]
+            - Fn::GetAtt: [NotificationsTable, Arn]
+            - Fn::Sub: '${NotificationsTable.Arn}/index/*'
+        - Effect: Allow
+          Action:
+            - lambda:InvokeFunction
+          Resource:
+            - Fn::GetAtt: [GetTemperatureLambdaFunction, Arn]
+            - Fn::GetAtt: [GetWeatherMetadataLambdaFunction, Arn]
+            - Fn::GetAtt: [Get2hrWeatherLambdaFunction, Arn]
+            # - Fn::GetAtt: [GetTrafficImagesLambdaFunction, Arn]
+            - Fn::GetAtt: [GetParkingLambdaFunction, Arn]
+            - Fn::GetAtt: [GetRecommendationLambdaFunction, Arn]
+        - Effect: Allow
+          Action:
+            - ses:SendEmail
+            - ses:SendRawEmail
+          Resource: '*'
 
 functions:
   health:
@@ -57,6 +89,19 @@ functions:
                 region: false
             schemas:
               application/json: ${file(src/handlers/getWeatherMetadata/schema.json)}
+
+  getTemperature:
+    handler: src/handlers/getTemperature/index.handler
+    events:
+      - http:
+          path: /temperature
+          method: GET
+          cors: true
+          request:
+            parameters:
+              querystrings:
+                latitude: true
+                longitude: true
 
   get2hrWeather:
     handler: src/handlers/get2hrWeather/index.handler
@@ -88,6 +133,51 @@ functions:
             schemas:
               application/json: ${file(src/handlers/getParking/schema.json)}
 
+  # getTrafficImages:
+  #   handler: src/handlers/getTrafficImages/index.handler
+  #   events:
+  #     - http:
+  #         path: /traffic-images
+  #         method: GET
+  #         cors: true
+  #         request:
+  #           parameters:
+  #             querystrings:
+  #               latitude: true
+  #               longitude: true
+
+  getRecommendation:
+    handler: src/handlers/getRecommendation/index.handler
+    events:
+      - http:
+          path: /recommendation
+          method: POST
+          cors: true
+
+  subscribeNotification:
+    handler: src/handlers/subscribeNotification/index.handler
+    events:
+      - http:
+          path: /notifications/subscribe
+          method: POST
+          cors: true
+
+  verifyNotification:
+    handler: src/handlers/verifyNotification/index.handler
+    events:
+      - http:
+          path: /notifications/verify
+          method: GET
+          cors: true
+          request:
+            parameters:
+              querystrings:
+                subscriptionKey: true
+                token: true
+
+  checker:
+    handler: src/handlers/checker/index.handler
+
 plugins:
   - serverless-esbuild
   - serverless-offline
@@ -116,6 +206,8 @@ custom:
   weather2hrTableName: weather-2hr-cache-${self:provider.stage}
   carparkMetadataTableName: carpark-metadata-${self:provider.stage}
   carparkCacheTableName: carpark-availability-cache-${self:provider.stage}
+  notificationsTableName: notifications-${self:provider.stage}
+  trafficImagesApiUrl: https://api.data.gov.sg/v1/transport/traffic-images
 
 resources:
   Resources:
@@ -183,6 +275,80 @@ resources:
           AttributeName: ttl
           Enabled: true
         BillingMode: PAY_PER_REQUEST
+
+    NotificationsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.notificationsTableName}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: subscriptionKey
+            AttributeType: S
+          - AttributeName: status
+            AttributeType: S
+          - AttributeName: nextCheckAt
+            AttributeType: N
+        KeySchema:
+          - AttributeName: subscriptionKey
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: status-nextCheckAt-index
+            KeySchema:
+              - AttributeName: status
+                KeyType: HASH
+              - AttributeName: nextCheckAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
+
+    CheckerScheduleInvokeRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: scheduler.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: checker-schedule-invoke
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action: lambda:InvokeFunction
+                  Resource:
+                    Fn::GetAtt: [CheckerLambdaFunction, Arn]
+
+    CheckerSchedule:
+      Type: AWS::Scheduler::Schedule
+      Properties:
+        Name: ${self:service}-${self:provider.stage}-checker-schedule
+        FlexibleTimeWindow:
+          Mode: 'OFF'
+        ScheduleExpression: rate(15 minutes)
+        ScheduleExpressionTimezone: Asia/Singapore
+        State: ENABLED
+        Target:
+          Arn:
+            Fn::GetAtt: [CheckerLambdaFunction, Arn]
+          RoleArn:
+            Fn::GetAtt: [CheckerScheduleInvokeRole, Arn]
+          Input: '{"source":"eventbridge-scheduler"}'
+
+    CheckerScheduleLambdaPermission:
+      Type: AWS::Lambda::Permission
+      Properties:
+        FunctionName:
+          Ref: CheckerLambdaFunction
+        Action: lambda:InvokeFunction
+        Principal: scheduler.amazonaws.com
+        SourceArn:
+          Fn::GetAtt: [CheckerSchedule, Arn]
 
 package:
   individually: true
