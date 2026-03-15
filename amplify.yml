@@ -19,7 +19,12 @@ backend:
           else
             STAGE=dev
           fi
-        - npx serverless deploy --stage $STAGE --region ap-southeast-1 --param="licenseKey=$SERVERLESS_LICENSE_KEY"
+        - |
+          if [ -z "$SERVERLESS_ACCESS_KEY" ] && [ -z "$SERVERLESS_LICENSE_KEY" ]; then
+            echo "Missing Serverless auth env var. Set SERVERLESS_ACCESS_KEY (recommended) or SERVERLESS_LICENSE_KEY in Amplify env vars."
+            exit 1
+          fi
+        - npx serverless deploy --stage $STAGE --region ap-southeast-1
 
 frontend:
   phases:
