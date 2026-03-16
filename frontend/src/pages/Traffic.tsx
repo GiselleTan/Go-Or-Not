@@ -58,8 +58,14 @@ const Traffic = () => {
 
     fetchImages();
 
+    // Poll every minute (60000ms)
+    // const intervalId = setInterval(() => {
+    //   fetchImages();
+    // }, 60000);
+
     return () => {
       isCancelled = true;
+      // clearInterval(intervalId);
     };
   }, [activeTab]);
 
