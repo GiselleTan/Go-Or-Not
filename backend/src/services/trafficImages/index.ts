@@ -8,7 +8,7 @@ import type {
   Highways,
 } from './types.js';
 
-const CACHE_TTL_MINUTES = 15;
+const CACHE_TTL_MINUTES = 15; // Recommended to change to 1 minute later on
 const CACHE_PK = 'TrafficImages';
 
 export const getTrafficImages = async (
