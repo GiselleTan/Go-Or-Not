@@ -86,8 +86,6 @@ functions:
                 latitude: true
                 longitude: true
                 region: false
-            schemas:
-              application/json: ${file(src/handlers/getWeatherMetadata/schema.json)}
 
   getTemperature:
     handler: src/handlers/getTemperature/index.handler
@@ -114,8 +112,6 @@ functions:
               querystrings:
                 latitude: true
                 longitude: true
-            schemas:
-              application/json: ${file(src/handlers/get2hrWeather/schema.json)}
 
   getParking:
     handler: src/handlers/getParking/index.handler
@@ -129,8 +125,6 @@ functions:
               querystrings:
                 latitude: true
                 longitude: true
-            schemas:
-              application/json: ${file(src/handlers/getParking/schema.json)}
 
   getTrafficImages:
     handler: src/handlers/getTrafficImages/index.handler
