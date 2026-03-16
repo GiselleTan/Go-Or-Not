@@ -95,7 +95,7 @@ const ShouldIGo = () => {
     setLoading(true);
     try {
       const weatherRes = await fetch(`http://localhost:3001/weather?latitude=${latitude}&longitude=${longitude}`);
-      const metadataRes = await fetch(`http://localhost:3001/weather-metadata?latitude=${latitude}&longitude=${longitude}&region=central`);
+      const metadataRes = await fetch(`http://localhost:3001/weather-metadata?latitude=${latitude}&longitude=${longitude}`);
 
       if (!weatherRes.ok || !metadataRes.ok) {
         throw new Error("Failed to fetch from new APIs");
@@ -107,8 +107,8 @@ const ShouldIGo = () => {
       // update according to final schema
       setWeatherData({
         temp: metadata.temperature?.data?.temperature ?? 29,
-        humidity: 80, // API lacks humidity
-        windSpeed: 3.3, // API lacks wind speed
+        humidity: metadata.humidity?.data?.humidity ?? 80,
+        windSpeed: metadata.wind?.data.windSpeed ?? 3.3,
         desc: weather2hr.data?.forecast ?? "Fair",
         uvIndex: metadata.uv?.data?.value ?? 10,
         psi: metadata.psi?.data?.psiTwentyFourHourly ?? 55,
