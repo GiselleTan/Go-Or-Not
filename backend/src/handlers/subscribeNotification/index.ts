@@ -25,6 +25,27 @@ const allowedHours = new Set([1, 2, 4, 8, 24]);
 const hashValue = (value: string): string =>
   createHash('sha256').update(value).digest('hex');
 
+const deriveApiBaseUrl = (event: APIGatewayProxyEvent): string | null => {
+  const explicitBaseUrl = appBaseUrl.trim();
+  if (explicitBaseUrl) {
+    return explicitBaseUrl;
+  }
+
+  const host = event.headers.host ?? event.headers.Host;
+  if (!host) {
+    return null;
+  }
+
+  const protocol = event.headers['x-forwarded-proto'] ?? 'https';
+  const stage = event.requestContext.stage;
+
+  if (!stage || stage === '$default') {
+    return `${protocol}://${host}`;
+  }
+
+  return `${protocol}://${host}/${stage}`;
+};
+
 export const handler = async (
   event: APIGatewayProxyEvent,
 ): Promise<APIGatewayProxyResult> => {
@@ -100,8 +121,10 @@ export const handler = async (
       }),
     );
 
-    if (senderEmail && appBaseUrl) {
-      const verifyUrl = new URL('/notifications/verify', appBaseUrl);
+    const baseUrl = deriveApiBaseUrl(event);
+
+    if (senderEmail && baseUrl) {
+      const verifyUrl = new URL('/notifications/verify', baseUrl);
       verifyUrl.searchParams.set('subscriptionKey', subscriptionKey);
       verifyUrl.searchParams.set('token', verificationToken);
 
@@ -130,7 +153,7 @@ export const handler = async (
         subscriptionKey,
         status: 'PENDING',
         message:
-          senderEmail && appBaseUrl
+          senderEmail && baseUrl
             ? 'Verification email sent. Please confirm to activate notifications.'
             : 'Subscription created in PENDING state. Configure SENDER_EMAIL and APP_BASE_URL to send verification links.',
       }),

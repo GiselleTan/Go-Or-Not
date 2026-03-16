@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import ShouldIGo from './pages/ShouldIGo';
 import Traffic from './pages/Traffic';
+import NotificationVerify from './pages/NotificationVerify';
 import './index.css';
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
           <Routes>
             <Route index element={<ShouldIGo />} />
             <Route path="traffic" element={<Traffic />} />
+            <Route path="notifications/verify" element={<NotificationVerify />} />
           </Routes>
         </div>
       </div>

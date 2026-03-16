@@ -6,6 +6,7 @@ import SunnyIcon from '../assets/sunny.svg';
 import BadIcon from '../assets/bad.svg';
 import GoodIcon from '../assets/good.svg';
 import MaybeIcon from '../assets/maybe.svg';
+import { API_BASE_URL } from '../config';
 
 // FORMULA: Steadman's Formula for feels like temperature
 // we assume here that relative humidity is given as a %, and wind is given in knots (i.e., 1 kn = 1.852km/h)
@@ -69,12 +70,23 @@ const overviewData = (uv: number, psi: number) => {
   }
 };
 
+type OneMapSuggestion = {
+  ADDRESS: string;
+  POSTAL: string;
+  LATITUDE: string;
+  LONGITUDE: string;
+};
+
 const ShouldIGo = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [coords, setCoords] = useState({ lat: "1.3521", lon: "103.8198" });
   const [updateHour, setUpdateHour] = useState('1')
+  const [notificationEmail, setNotificationEmail] = useState('');
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [notificationError, setNotificationError] = useState('');
+  const [submittingNotification, setSubmittingNotification] = useState(false);
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<OneMapSuggestion[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectedPostal, setSelectedPostal] = useState("");
@@ -94,8 +106,8 @@ const ShouldIGo = () => {
   const fetchAllWeatherData = async (latitude: string, longitude: string) => {
     setLoading(true);
     try {
-      const weatherRes = await fetch(`http://localhost:3001/weather?latitude=${latitude}&longitude=${longitude}`);
-      const metadataRes = await fetch(`http://localhost:3001/weather-metadata?latitude=${latitude}&longitude=${longitude}`);
+      const weatherRes = await fetch(`${API_BASE_URL}/weather?latitude=${latitude}&longitude=${longitude}`);
+      const metadataRes = await fetch(`${API_BASE_URL}/weather-metadata?latitude=${latitude}&longitude=${longitude}`);
 
       if (!weatherRes.ok || !metadataRes.ok) {
         throw new Error("Failed to fetch from new APIs");
@@ -114,7 +126,7 @@ const ShouldIGo = () => {
         psi: metadata.psi?.data?.psiTwentyFourHourly ?? 55,
       });
 
-    } catch (error) {
+    } catch {
       // console.error("Failed to fetch weather:", error);
       console.warn("Backend not ready, using mock data instead.");
       setWeatherData({
@@ -144,9 +156,9 @@ const ShouldIGo = () => {
 
   useEffect(() => {
     fetchAllWeatherData(coords.lat, coords.lon);
-  }, []);
+  }, [coords.lat, coords.lon]);
 
-  const handleSelectAddress = (item: any) => {
+  const handleSelectAddress = (item: OneMapSuggestion) => {
     setSuggestions([]);
     setShowDropdown(false);
     setIsSelecting(true);
@@ -155,8 +167,6 @@ const ShouldIGo = () => {
     setSelectedPostal(item.POSTAL);
     setCoords({ lat: item.LATITUDE, lon: item.LONGITUDE });
 
-    // Trigger the weather fetch using the new coords
-    fetchAllWeatherData(item.LATITUDE, item.LONGITUDE);
   };
 
   useEffect(() => {
@@ -176,8 +186,8 @@ const ShouldIGo = () => {
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(`https://www.onemap.gov.sg/api/common/elastic/search?searchVal=${encodeURIComponent(query)}&returnGeom=Y&getAddrDetails=Y`);
-        const data = await res.json();
-        const filteredResults = (data.results || []).filter((item: any) =>
+        const data = (await res.json()) as { results?: OneMapSuggestion[] };
+        const filteredResults = (data.results || []).filter((item) =>
           item.POSTAL && item.POSTAL !== "NIL"
         );
         if (filteredResults.length === 1 && filteredResults[0].ADDRESS === query) {
@@ -195,7 +205,55 @@ const ShouldIGo = () => {
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, isSelecting]);
+
+  const submitNotification = async () => {
+    setNotificationMessage('');
+    setNotificationError('');
+
+    const email = notificationEmail.trim().toLowerCase();
+    if (!email) {
+      setNotificationError('Please enter your email address.');
+      return;
+    }
+
+    const latitude = Number(coords.lat);
+    const longitude = Number(coords.lon);
+    if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+      setNotificationError('Please select a valid destination first.');
+      return;
+    }
+
+    setSubmittingNotification(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/notifications/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          postalCode: selectedPostal || undefined,
+          latitude,
+          longitude,
+          notifyAfterHours: Number(updateHour),
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        setNotificationError(payload.error ?? 'Unable to subscribe for notifications.');
+        return;
+      }
+
+      setNotificationMessage(
+        payload.message ??
+        'Subscription created. Please check your inbox and verify to activate notifications.',
+      );
+    } catch {
+      setNotificationError('Unable to reach notification service. Please try again.');
+    } finally {
+      setSubmittingNotification(false);
+    }
+  };
 
   if (loading && isInitialLoad) {
     return (
@@ -442,6 +500,8 @@ const ShouldIGo = () => {
           <input
             className="input-field"
             type="email"
+            value={notificationEmail}
+            onChange={(e) => setNotificationEmail(e.target.value)}
             placeholder="Enter your email address"
             style={{ minWidth: 400 }}
           />
@@ -457,8 +517,20 @@ const ShouldIGo = () => {
             <option value="4">4 hours later</option>
             <option value='8'>8 hours later</option>
           </select>
-          <button className="btn-primary">Notify Me</button>
+          <button
+            className="btn-primary"
+            onClick={submitNotification}
+            disabled={submittingNotification}
+          >
+            {submittingNotification ? 'Submitting...' : 'Notify Me'}
+          </button>
         </div>
+        {notificationMessage && (
+          <p style={{ color: '#008E9B', marginTop: '8px', fontWeight: 600 }}>{notificationMessage}</p>
+        )}
+        {notificationError && (
+          <p style={{ color: '#C80000', marginTop: '8px', fontWeight: 600 }}>{notificationError}</p>
+        )}
       </div>
     </div >
   );
