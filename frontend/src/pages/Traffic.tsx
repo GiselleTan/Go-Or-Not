@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config';
 
 interface TrafficImage {
   highway: string;
@@ -31,7 +32,7 @@ const Traffic = () => {
       setLoading(true);
       setError('');
       try {
-        const response = await fetch(`http://localhost:3001/traffic-images?highway=${highways[activeTab].label}`);
+        const response = await fetch(`${API_BASE_URL}/traffic-images?highway=${highways[activeTab].label}`);
         if (!response.ok) {
           throw new Error('Failed to fetch traffic images');
         }
