@@ -1,7 +1,9 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 
-const isLocal = process.env.NODE_ENV === 'dev' || process.env.IS_OFFLINE;
+// use managed DynamoDB endpoint in AWS Lambda, otherwise connect to local DynamoDB when running offline
+const isRunningInAwsLambda = Boolean(process.env.LAMBDA_TASK_ROOT);
+const isLocal = !isRunningInAwsLambda && process.env.IS_OFFLINE === 'true';
 
 const client = new DynamoDBClient(
   isLocal
