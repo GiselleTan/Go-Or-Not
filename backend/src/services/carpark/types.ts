@@ -29,6 +29,8 @@ export interface CarparkAvailability {
 export interface ParkingResponse extends CarparkMetadata {
   total_lots: number;
   lots_available: number;
+  type: string;
+  system: string;
 }
 
 export interface CarparkApiResponse {

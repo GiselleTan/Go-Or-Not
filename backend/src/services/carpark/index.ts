@@ -39,13 +39,11 @@ export class CarparkService {
           (a) => a.carpark_number === cp.carpark_number,
         );
         const carInfo = avail?.carpark_info.find(
-          (info) => info.lot_type === 'C',
+          (info) => info.lot_type === 'C'
         );
 
-        const { x_coord, y_coord, ...rest } = cp;
-
         return {
-          ...rest,
+          ...cp,
           type: cp.car_park_type,
           system: cp.type_of_parking_system,
           total_lots: parseInt(carInfo?.total_lots || '0'),
@@ -106,9 +104,9 @@ export class CarparkService {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 }

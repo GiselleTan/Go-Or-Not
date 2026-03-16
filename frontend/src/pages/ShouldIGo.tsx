@@ -6,6 +6,7 @@ import SunnyIcon from '../assets/sunny.svg';
 import BadIcon from '../assets/bad.svg';
 import GoodIcon from '../assets/good.svg';
 import MaybeIcon from '../assets/maybe.svg';
+import type { ParkingResponse } from '../../../backend/src/services/carpark/types.ts';
 import { API_BASE_URL } from '../config';
 
 // FORMULA: Steadman's Formula for feels like temperature
@@ -90,6 +91,7 @@ const ShouldIGo = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectedPostal, setSelectedPostal] = useState("");
+  const [parkingMarkers, setParkingMarkers] = useState<string>("");
 
   // test out if this is still necessary
   const [weatherData, setWeatherData] = useState({
@@ -119,8 +121,8 @@ const ShouldIGo = () => {
       // update according to final schema
       setWeatherData({
         temp: metadata.temperature?.data?.temperature ?? 29,
-        humidity: metadata.humidity?.data?.humidity ?? 80,
-        windSpeed: metadata.wind?.data.windSpeed ?? 3.3,
+        humidity: 80, // API lacks humidity
+        windSpeed: 3.3, // API lacks wind speed
         desc: weather2hr.data?.forecast ?? "Fair",
         uvIndex: metadata.uv?.data?.value ?? 10,
         psi: metadata.psi?.data?.psiTwentyFourHourly ?? 55,
@@ -137,6 +139,58 @@ const ShouldIGo = () => {
         uvIndex: 10,
         psi: 55
       });
+    } finally {
+      setLoading(false);
+      setIsInitialLoad(false);
+    }
+  };
+
+  const fetchAllParkingData = async (latitude: string, longitude: string) => {
+    setLoading(true);
+    try {
+      const parkingRes = await fetch(`http://localhost:3001/parking?latitude=${latitude}&longitude=${longitude}`);
+
+      if (!parkingRes.ok) {
+        throw new Error("Failed to fetch from new APIs");
+      }
+      const rawData = await parkingRes.json();
+      const parkingData: ParkingResponse[] = (rawData.parking || []).slice(0, 3);
+
+      const markerStrings = await Promise.all(parkingData.map(async (cp: ParkingResponse) => {
+        const html = getParkingHtml(cp.type, cp.system, cp.total_lots, cp.lots_available);
+        const iwt = translateBase64(html);
+        const color = cp.lots_available > 0 ? "green" : "black";
+
+        try {
+          //   const res = await fetch(`https://www.onemap.gov.sg/api/public/revgeocodexy?location=${cp.x_coord}%2C${cp.y_coord}&buffer=40&addressType=All`,
+          //     {
+          //       method: 'GET',
+          //       headers: {
+          //         'Authorization': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMTcxOCwiZm9yZXZlciI6ZmFsc2UsImlzcyI6Ik9uZU1hcCIsImlhdCI6MTc3MjYwOTIwNCwibmJmIjoxNzcyNjA5MjA0LCJleHAiOjE3NzI4Njg0MDQsImp0aSI6ImE3MjJmOWViLThiMWMtNGY1My1hZWQ0LWMwNDYzZDU3OTdlZCJ9.t81cTTk45tVY0d8aDCMicaYhkR-m_yOAKDs1dvPMzc9V-KtSnyoxL76gS531h6Dmoz4WBnpOrDT1B7_9QjZCZiZ0Ny9FUvlghFpiVOnb_4iQxNJqaf8ITWZBwecqT9cgiBMChTJeudHm3fScamm9W1OEzB3T3Fhc7se4lHqlFZoyL6laY31ct0EGuEuMOxg2Bs8syjMKhMq59SBwxq32fBEB2Xqz3GC50VCpZYymBiTRz9M8KAFUdgA6dv9NZTPjnYE9dCfFaacC2PIIZeD0gaXXoirSJ2c7yMaO6FOG_S-EFZXwiPjYDAZkUvlhQc6dMoF09KeJeJeegF0GNZRtwQ',
+          //       }
+          //     }
+          //   );
+          //   if (!res.ok) {
+          //     console.error(`Status: ${res.status}`);
+          //     return null;
+          //   }
+
+          //   const data = await res.json();
+          // const postal = data.results?.[0]?.POSTALCODE || "550425";
+          const postal = "550425";
+          return `postalcode:${postal}!colour:${color}!iwt:${iwt}`;
+        } catch (err) {
+          console.error("Couldn't find car park:", err);
+        }
+      }));
+
+      const finalMarkerParam = markerStrings.join("&marker=")
+      console.log(finalMarkerParam);
+      setParkingMarkers(finalMarkerParam);
+
+    } catch (err) {
+      console.error("Failed to fetch parking:", err);
+      console.warn("Backend not ready.");
     } finally {
       setLoading(false);
       setIsInitialLoad(false);
@@ -167,6 +221,8 @@ const ShouldIGo = () => {
     setSelectedPostal(item.POSTAL);
     setCoords({ lat: item.LATITUDE, lon: item.LONGITUDE });
 
+    // Trigger the weather fetch using the new coords
+    fetchAllWeatherData(item.LATITUDE, item.LONGITUDE);
   };
 
   useEffect(() => {
@@ -270,6 +326,17 @@ const ShouldIGo = () => {
       </div>
     );
   }
+
+  const getParkingHtml = (type: string, system: string, total_lots: number, lots_available: number) => {
+    const html = `<p>Car Park Type: ${type}</p><p>Parking System: ${system}</p><p>Lots Available: ${lots_available}</p><p>Total Lots: ${total_lots}</p>`
+    return html;
+  }
+
+  const translateBase64 = (html: string) => {
+    const encodedHtml = encodeURIComponent(html);
+    return btoa(encodedHtml);
+  }
+
 
   return (
     <div className="should-i-go">
@@ -480,7 +547,7 @@ const ShouldIGo = () => {
         <div className="map-panel" style={{ height: '100%', minHeight: '300px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #eee' }}>
           <iframe
             key={selectedPostal}
-            src={`https://www.onemap.gov.sg/amm/amm.html?mapStyle=Default&zoomLevel=15&marker=postalcode:${selectedPostal}!colour:red`}
+            src={`https://www.onemap.gov.sg/amm/amm.html?mapStyle=Default&zoomLevel=15&marker=postalcode:${selectedPostal}!colour:red&marker=${parkingMarkers}`}
             height="100%"
             width="100%"
             scrolling="no"
