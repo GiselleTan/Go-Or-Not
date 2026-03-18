@@ -121,8 +121,8 @@ const ShouldIGo = () => {
       // update according to final schema
       setWeatherData({
         temp: metadata.temperature?.data?.temperature ?? 29,
-        humidity: 80, // API lacks humidity
-        windSpeed: 3.3, // API lacks wind speed
+        humidity: metadata.humidity?.data?.temperature ?? 80, // API lacks humidity
+        windSpeed: metadata.windspeed?.data?.temperature ?? 3.3, // API lacks wind speed
         desc: weather2hr.data?.forecast ?? "Fair",
         uvIndex: metadata.uv?.data?.value ?? 10,
         psi: metadata.psi?.data?.psiTwentyFourHourly ?? 55,
@@ -149,24 +149,27 @@ const ShouldIGo = () => {
     setLoading(true);
     try {
       const parkingRes = await fetch(`http://localhost:3001/parking?latitude=${latitude}&longitude=${longitude}`);
+      console.log("1");
 
       if (!parkingRes.ok) {
         throw new Error("Failed to fetch from new APIs");
       }
+      console.log("2");
       const rawData = await parkingRes.json();
       const parkingData: ParkingResponse[] = (rawData.parking || []).slice(0, 3);
-
+      console.log("3");
       const markerStrings = await Promise.all(parkingData.map(async (cp: ParkingResponse) => {
         const html = getParkingHtml(cp.type, cp.system, cp.total_lots, cp.lots_available);
         const iwt = translateBase64(html);
         const color = cp.lots_available > 0 ? "green" : "black";
-
+        console.log("4");
         try {
+          const token = '';
           //   const res = await fetch(`https://www.onemap.gov.sg/api/public/revgeocodexy?location=${cp.x_coord}%2C${cp.y_coord}&buffer=40&addressType=All`,
           //     {
           //       method: 'GET',
           //       headers: {
-          //         'Authorization': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMTcxOCwiZm9yZXZlciI6ZmFsc2UsImlzcyI6Ik9uZU1hcCIsImlhdCI6MTc3MjYwOTIwNCwibmJmIjoxNzcyNjA5MjA0LCJleHAiOjE3NzI4Njg0MDQsImp0aSI6ImE3MjJmOWViLThiMWMtNGY1My1hZWQ0LWMwNDYzZDU3OTdlZCJ9.t81cTTk45tVY0d8aDCMicaYhkR-m_yOAKDs1dvPMzc9V-KtSnyoxL76gS531h6Dmoz4WBnpOrDT1B7_9QjZCZiZ0Ny9FUvlghFpiVOnb_4iQxNJqaf8ITWZBwecqT9cgiBMChTJeudHm3fScamm9W1OEzB3T3Fhc7se4lHqlFZoyL6laY31ct0EGuEuMOxg2Bs8syjMKhMq59SBwxq32fBEB2Xqz3GC50VCpZYymBiTRz9M8KAFUdgA6dv9NZTPjnYE9dCfFaacC2PIIZeD0gaXXoirSJ2c7yMaO6FOG_S-EFZXwiPjYDAZkUvlhQc6dMoF09KeJeJeegF0GNZRtwQ',
+          //         'Authorization': token,
           //       }
           //     }
           //   );
@@ -178,6 +181,7 @@ const ShouldIGo = () => {
           //   const data = await res.json();
           // const postal = data.results?.[0]?.POSTALCODE || "550425";
           const postal = "550425";
+          console.log("5");
           return `postalcode:${postal}!colour:${color}!iwt:${iwt}`;
         } catch (err) {
           console.error("Couldn't find car park:", err);
@@ -223,6 +227,7 @@ const ShouldIGo = () => {
 
     // Trigger the weather fetch using the new coords
     fetchAllWeatherData(item.LATITUDE, item.LONGITUDE);
+    fetchAllParkingData(item.LATITUDE, item.LONGITUDE);
   };
 
   useEffect(() => {
