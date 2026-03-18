@@ -236,7 +236,7 @@ body {
   padding: 6px;
   position: absolute;
   bottom: 125%;
-  margin-left: -100px;
+  margin-left: -150px;
   font-size: 0.8rem;
   pointer-events: none;
   z-index: 9999;
@@ -492,8 +492,23 @@ body {
 }
 
 @keyframes toast-show {
-  0%   { opacity: 0; transform: translateX(-50%) translateY(-16px); }
-  10%  { opacity: 1; transform: translateX(-50%) translateY(0); }
-  80%  { opacity: 1; transform: translateX(-50%) translateY(0); }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-16px); }
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-16px);
+  }
+
+  10% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  80% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-16px);
+  }
 }

@@ -145,8 +145,8 @@ const ShouldIGo = () => {
       // update according to final schema
       setWeatherData({
         temp: metadata.temperature?.data?.temperature ?? 29,
-        humidity: metadata.humidity?.data?.temperature ?? 80, // API lacks humidity
-        windSpeed: metadata.windspeed?.data?.temperature ?? 3.3, // API lacks wind speed
+        humidity: metadata.humidity?.data?.temperature ?? 80,
+        windSpeed: metadata.windspeed?.data?.temperature ?? 3.3,
         desc: weather2hr.data?.forecast ?? "Fair",
         uvIndex: metadata.uv?.data?.value ?? 10,
         psi: metadata.psi?.data?.psiTwentyFourHourly ?? 55,
@@ -459,9 +459,9 @@ const ShouldIGo = () => {
 
                 {/* Description & Feels Like Group */}
                 <div style={{ display: 'flex', flexDirection: 'column', flex: '1', minWidth: '100px', gap: '3px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                  <div style={{ display: 'block', alignItems: 'center', gap: '8px', flexWrap: 'wrap', whiteSpace: 'normal' }}>
                     <span style={{ fontWeight: 'bold', fontSize: '1.1rem', lineHeight: '1.2', color: '#524e4e' }}>{weatherData.desc}</span>
-                    <div className="tooltip-container">
+                    <div className="tooltip-container" style={{ verticalAlign: 'middle', marginLeft: '6px', display: 'inline-block' }}>
                       <span>ⓘ</span>
                       <span className="tooltip-text">A 2-hour Weather Forecast</span>
                     </div>
@@ -588,10 +588,11 @@ const ShouldIGo = () => {
         </div>
 
         {/* Right panel — map */}
+        {/* 'PHA+WW91ciBEZXN0aW5hdGlvbiE8L3A+' iwt is the Base64 encoding of <p>Your Destination!</p>, which is the default pop-up text for destination on the map*/}
         <div className="map-panel" style={{ height: '100%', minHeight: '300px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #eee' }}>
           <iframe
             key={selectedPostal}
-            src={`https://www.onemap.gov.sg/amm/amm.html?mapStyle=Default&zoomLevel=15&marker=postalcode:${selectedPostal}!colour:red&marker=${parkingMarkers}`}
+            src={`https://www.onemap.gov.sg/amm/amm.html?mapStyle=Default&zoomLevel=15&marker=postalcode:${selectedPostal}!colour:red!iwt:PHA+WW91ciBEZXN0aW5hdGlvbiE8L3A+&marker=${parkingMarkers}`}
             height="100%"
             width="100%"
             scrolling="no"
