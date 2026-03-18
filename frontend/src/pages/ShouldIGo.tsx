@@ -78,13 +78,37 @@ type OneMapSuggestion = {
   LONGITUDE: string;
 };
 
+const toFriendlyNotificationError = (rawMessage: string | undefined): string => {
+  if (!rawMessage) {
+    return 'Could not subscribe. Please try again.';
+  }
+
+  const normalized = rawMessage.toLowerCase();
+
+  if (
+    normalized.includes('email address is not verified') ||
+    normalized.includes('identities failed the check')
+  ) {
+    return 'Email not approved. SES sandbox only sends to verified addresses.';
+  }
+
+  if (normalized.includes('valid email')) {
+    return 'Please enter a valid email address.';
+  }
+
+  if (normalized.includes('destination') || normalized.includes('latitude')) {
+    return 'Please choose a destination first.';
+  }
+
+  return 'Could not subscribe. Please try again.';
+};
+
 const ShouldIGo = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [coords, setCoords] = useState({ lat: "1.3521", lon: "103.8198" });
   const [updateHour, setUpdateHour] = useState('1')
   const [notificationEmail, setNotificationEmail] = useState('');
-  const [notificationMessage, setNotificationMessage] = useState('');
-  const [notificationError, setNotificationError] = useState('');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [submittingNotification, setSubmittingNotification] = useState(false);
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<OneMapSuggestion[]>([]);
@@ -268,20 +292,28 @@ const ShouldIGo = () => {
     return () => clearTimeout(timer);
   }, [query, isSelecting]);
 
-  const submitNotification = async () => {
-    setNotificationMessage('');
-    setNotificationError('');
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
+  const submitNotification = async () => {
     const email = notificationEmail.trim().toLowerCase();
     if (!email) {
-      setNotificationError('Please enter your email address.');
+      setToast({ message: 'Please enter your email address.', type: 'error' });
+      return;
+    }
+
+    if (!selectedPostal) {
+      setToast({ message: 'Please search for and select a destination first.', type: 'error' });
       return;
     }
 
     const latitude = Number(coords.lat);
     const longitude = Number(coords.lon);
     if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
-      setNotificationError('Please select a valid destination first.');
+      setToast({ message: 'Please select a valid destination first.', type: 'error' });
       return;
     }
 
@@ -301,16 +333,16 @@ const ShouldIGo = () => {
 
       const payload = await response.json();
       if (!response.ok) {
-        setNotificationError(payload.error ?? 'Unable to subscribe for notifications.');
+        setToast({ message: toFriendlyNotificationError(payload.error), type: 'error' });
         return;
       }
 
-      setNotificationMessage(
-        payload.message ??
-        'Subscription created. Please check your inbox and verify to activate notifications.',
-      );
+      setToast({
+        message: 'Saved. Check your approved inbox for updates.',
+        type: 'success',
+      });
     } catch {
-      setNotificationError('Unable to reach notification service. Please try again.');
+      setToast({ message: 'Unable to reach notification service. Please try again.', type: 'error' });
     } finally {
       setSubmittingNotification(false);
     }
@@ -345,6 +377,13 @@ const ShouldIGo = () => {
 
   return (
     <div className="should-i-go">
+
+      {toast && (
+        <div className={`toast toast-${toast.type}`}>
+          <span className="toast-icon">{toast.type === 'success' ? '✓' : '!'}</span>
+          <span>{toast.message}</span>
+        </div>
+      )}
 
       {/* Main split */}
       <div className="main-grid" style={{ flex: 1, minHeight: 0 }}>
@@ -597,12 +636,6 @@ const ShouldIGo = () => {
             {submittingNotification ? 'Submitting...' : 'Notify Me'}
           </button>
         </div>
-        {notificationMessage && (
-          <p style={{ color: '#008E9B', marginTop: '8px', fontWeight: 600 }}>{notificationMessage}</p>
-        )}
-        {notificationError && (
-          <p style={{ color: '#C80000', marginTop: '8px', fontWeight: 600 }}>{notificationError}</p>
-        )}
       </div>
     </div >
   );
