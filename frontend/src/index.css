@@ -379,7 +379,7 @@ body {
   border-radius: 16px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   flex-direction: column;
   gap: 24px;
   overflow: hidden;
@@ -429,6 +429,7 @@ body {
 .feed-placeholder {
   width: min(600px, 85%);
   height: min(340px, 40vh);
+  margin: auto;
   border: 2px dashed rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   display: flex;
