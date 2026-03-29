@@ -153,7 +153,6 @@ const ShouldIGo = () => {
       });
 
     } catch {
-      // console.error("Failed to fetch weather:", error);
       console.warn("Backend not ready, using mock data instead.");
       setWeatherData({
         temp: 29,
@@ -173,39 +172,42 @@ const ShouldIGo = () => {
     setLoading(true);
     try {
       const parkingRes = await fetch(`http://localhost:3001/parking?latitude=${latitude}&longitude=${longitude}`);
-      console.log("1");
 
       if (!parkingRes.ok) {
         throw new Error("Failed to fetch from new APIs");
       }
-      console.log("2");
       const rawData = await parkingRes.json();
       const parkingData: ParkingResponse[] = (rawData.parking || []).slice(0, 3);
-      console.log("3");
       const markerStrings = await Promise.all(parkingData.map(async (cp: ParkingResponse) => {
-        const html = getParkingHtml(cp.type, cp.system, cp.total_lots, cp.lots_available);
+        const html = getParkingHtml(cp.address, cp.type, cp.system, cp.total_lots, cp.lots_available);
         const iwt = translateBase64(html);
         const color = cp.lots_available > 0 ? "green" : "black";
-        console.log("4");
+        let postal = "";
         try {
-          const token = '';
-          //   const res = await fetch(`https://www.onemap.gov.sg/api/public/revgeocodexy?location=${cp.x_coord}%2C${cp.y_coord}&buffer=40&addressType=All`,
-          //     {
-          //       method: 'GET',
-          //       headers: {
-          //         'Authorization': token,
-          //       }
-          //     }
-          //   );
-          //   if (!res.ok) {
-          //     console.error(`Status: ${res.status}`);
-          //     return null;
-          //   }
+          const token = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMTcxOCwiZm9yZXZlciI6ZmFsc2UsImlzcyI6Ik9uZU1hcCIsImlhdCI6MTc3NDc1NzY0OCwibmJmIjoxNzc0NzU3NjQ4LCJleHAiOjE3NzUwMTY4NDgsImp0aSI6IjA2YmY1MDNkLWZhYWQtNDViNS05YjFmLWU2ZWZkYTg2MTdjMyJ9.KlpXlmd6eZwKPmKthLv6NcXoQQkAmFj0yIauZJS7zERIZy7zZCjvGOIsOwoUHS_6JtkOEqtyQycMbAhpzUZBC-LPUCHhyr203a9owIgQKkLydVvdO8v39f46qmm_VDj25jEh15x9lGibe43apYu2F0W1D8zV22MCuShpCOyUtuyFRUD4OXC7Sjwd_7AVKtETbMEQDWs2bhoaPm6xFu_HOZvjDngg3sreDKNcNJCkAMR0-BMMwrFiYmGIAB_czCSIFzSYc4sAMdAgSZLxRcSEjGpYd7ldXJP8RSDCEhQSwUv19NsxDHqAER7CwOsz9cCpkenbLNKvlDiTwBInLEEz3Q';
+          const res = await fetch(`https://www.onemap.gov.sg/api/public/revgeocodexy?location=${cp.x_coord}%2C${cp.y_coord}&buffer=40&addressType=All`,
+            {
+              method: 'GET',
+              headers: {
+                'Authorization': token,
+              }
+            }
+          );
+          if (!res.ok) {
+            console.error(`Status: ${res.status}`);
+            return null;
+          }
 
-          //   const data = await res.json();
-          // const postal = data.results?.[0]?.POSTALCODE || "550425";
-          const postal = "550425";
-          console.log("5");
+          const data = await res.json();
+
+          if (data.GeocodeInfo && data.GeocodeInfo.length > 0) {
+            postal = data.GeocodeInfo[0].POSTALCODE;
+            console.log("Found Postal:", postal);
+          } else {
+            postal = '550425'
+            console.warn("No results found, using default.");
+          }
+
           return `postalcode:${postal}!colour:${color}!iwt:${iwt}`;
         } catch (err) {
           console.error("Couldn't find car park:", err);
@@ -364,8 +366,8 @@ const ShouldIGo = () => {
     );
   }
 
-  const getParkingHtml = (type: string, system: string, total_lots: number, lots_available: number) => {
-    const html = `<p>Car Park Type: ${type}</p><p>Parking System: ${system}</p><p>Lots Available: ${lots_available}</p><p>Total Lots: ${total_lots}</p>`
+  const getParkingHtml = (address: string, type: string, system: string, total_lots: number, lots_available: number) => {
+    const html = `<p>Car Park Address: ${address}</p><p>Car Park Type: ${type}</p><p>Parking System: ${system}</p><p>Lots Available: ${lots_available}</p><p>Total Lots: ${total_lots}</p>`
     return html;
   }
 
