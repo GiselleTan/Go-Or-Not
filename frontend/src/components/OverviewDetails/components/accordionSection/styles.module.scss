@@ -1,0 +1,35 @@
+.accordionItem {
+  overflow: hidden;
+  margin-top: 8px;
+  width: 100%;
+  background-color: #F8F9FA;
+  border-radius: 12px;
+  padding: 0 20px;
+}
+
+.accordionTrigger {
+	font-family: inherit;
+	height: 45px;
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	font-size: 16px;
+  font-weight: 700;
+	line-height: 1;
+	color: #6101EA;
+  width: 100%;
+}
+
+.accordionChevron {
+  transition: transform 0.2s ease;
+  .accordionTrigger[data-state="open"] > & {
+	  transform: rotate(180deg);
+	}
+  margin-left: auto;
+  color: #323232;
+}
+
+.accordionContent {
+  padding-bottom: 12px;
+}

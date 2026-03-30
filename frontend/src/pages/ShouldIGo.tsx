@@ -9,6 +9,11 @@ import MaybeIcon from '../assets/maybe.svg';
 import type { ParkingResponse } from '../../../backend/src/services/carpark/types.ts';
 import { API_BASE_URL } from '../config';
 import { InfoTooltip } from '../components/InfoTooltip.tsx';
+import { OverviewDetails } from '../components/OverviewDetails/index.tsx';
+import type {
+  RecommendationResponse,
+  RecommendationTier,
+} from '../types/recommendation.ts';
 
 // FORMULA: Steadman's Formula for feels like temperature
 // we assume here that relative humidity is given as a %, and wind is given in knots (i.e., 1 kn = 1.852km/h)
@@ -47,32 +52,39 @@ const getWeatherIcon = (description: string) => {
   return CloudyIcon; // Cloudy, Hazy, Slightly Hazy, Fog
 };
 
-const overviewData = (uv: number, psi: number) => {
-  if (uv > 7 || psi > 200) {
+const overviewData = (
+  recommendation: RecommendationTier | undefined,
+  summary: string | undefined,
+) => {
+  if (recommendation === 'GO') {
     return {
-      icon: BadIcon,
-      advice: 'Oh no!',
-      desc: 'Looks like it might not be the time...',
-      color: '#C80000',
-      backgroundColor: 'rgba(200, 0, 0, 0.1)',
+      icon: GoodIcon,
+      advice: 'Looking good!',
+      desc: summary ?? "It's a beautiful day to head out!",
+      color: '#008E9B',
+      backgroundColor: 'rgba(0, 142, 155, 0.1)',
     };
   }
-  if (uv > 5 || psi > 100) {
+
+  if (recommendation === 'MAYBE') {
     return {
       icon: MaybeIcon,
       advice: 'Hmm...maybe?',
-      desc: "Conditions aren't the best right now.",
+      desc: summary ?? "Conditions aren't the best right now.",
       color: '#CC7400',
       backgroundColor: 'rgba(204, 116, 0, 0.1)',
     };
   }
-  return {
-    icon: GoodIcon,
-    advice: 'Looking good!',
-    desc: "It's a beautiful day to head out!",
-    color: '#008E9B',
-    backgroundColor: 'rgba(0, 142, 155, 0.1)',
-  };
+
+  if (recommendation === 'NO_GO') {
+    return {
+      icon: BadIcon,
+      advice: 'Oh no!',
+      desc: summary ?? 'Looks like it might not be the time...',
+      color: '#C80000',
+      backgroundColor: 'rgba(200, 0, 0, 0.1)',
+    };
+  }
 };
 
 type OneMapSuggestion = {
@@ -111,7 +123,7 @@ const toFriendlyNotificationError = (
 
 const ShouldIGo = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [coords, setCoords] = useState({ lat: '1.3521', lon: '103.8198' });
+  const [coords, setCoords] = useState({ lat: '1.2839', lon: '103.8514' });
   const [updateHour, setUpdateHour] = useState('1');
   const [notificationEmail, setNotificationEmail] = useState('');
   const [toast, setToast] = useState<{
@@ -137,16 +149,28 @@ const ShouldIGo = () => {
   });
 
   const [loading, setLoading] = useState(true);
+  const [recommendationData, setRecommendationData] =
+    useState<RecommendationResponse | null>(null);
 
   const fetchAllWeatherData = async (latitude: string, longitude: string) => {
     setLoading(true);
     try {
-      const weatherRes = await fetch(
-        `${API_BASE_URL}/weather?latitude=${latitude}&longitude=${longitude}`,
-      );
-      const metadataRes = await fetch(
-        `${API_BASE_URL}/weather-metadata?latitude=${latitude}&longitude=${longitude}`,
-      );
+      const [weatherRes, metadataRes, recommendationRes] = await Promise.all([
+        fetch(
+          `${API_BASE_URL}/weather?latitude=${latitude}&longitude=${longitude}`,
+        ),
+        fetch(
+          `${API_BASE_URL}/weather-metadata?latitude=${latitude}&longitude=${longitude}`,
+        ),
+        fetch(`${API_BASE_URL}/recommendation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            latitude: Number(latitude),
+            longitude: Number(longitude),
+          }),
+        }),
+      ]);
 
       if (!weatherRes.ok || !metadataRes.ok) {
         throw new Error('Failed to fetch from new APIs');
@@ -154,16 +178,25 @@ const ShouldIGo = () => {
 
       const weather2hr = await weatherRes.json();
       const metadata = await metadataRes.json();
+      const metadataPayload = metadata.data ?? metadata;
 
       // update according to final schema
       setWeatherData({
-        temp: metadata.temperature?.data?.temperature ?? 29,
-        humidity: metadata.humidity?.data?.temperature ?? 80,
-        windSpeed: metadata.windspeed?.data?.temperature ?? 3.3,
+        temp: metadataPayload.temperature?.data?.temperature ?? 29,
+        humidity: metadataPayload.humidity?.data?.humidity ?? 80,
+        windSpeed: metadataPayload.wind?.data?.windSpeed ?? 3.3,
         desc: weather2hr.data?.forecast ?? 'Fair',
-        uvIndex: metadata.uv?.data?.value ?? 10,
-        psi: metadata.psi?.data?.psiTwentyFourHourly ?? 55,
+        uvIndex: metadataPayload.uv?.data?.value ?? 10,
+        psi: metadataPayload.psi?.data?.psiTwentyFourHourly ?? 55,
       });
+
+      if (recommendationRes.ok) {
+        const recommendation =
+          (await recommendationRes.json()) as RecommendationResponse;
+        setRecommendationData(recommendation);
+      } else {
+        setRecommendationData(null);
+      }
     } catch {
       console.warn('Backend not ready, using mock data instead.');
       setWeatherData({
@@ -174,6 +207,7 @@ const ShouldIGo = () => {
         uvIndex: 10,
         psi: 55,
       });
+      setRecommendationData(null);
     } finally {
       setLoading(false);
       setIsInitialLoad(false);
@@ -262,7 +296,10 @@ const ShouldIGo = () => {
   const weatherIcon = getWeatherIcon(weatherData.desc);
   const uvInfo = getUVStatus(weatherData.uvIndex);
   const psiInfo = getPSIStatus(weatherData.psi);
-  const overviewInfo = overviewData(weatherData.uvIndex, weatherData.psi);
+  const overviewInfo = overviewData(
+    recommendationData?.recommendation,
+    recommendationData?.summary,
+  );
 
   useEffect(() => {
     fetchAllWeatherData(coords.lat, coords.lon);
@@ -811,58 +848,69 @@ const ShouldIGo = () => {
           <div
             style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}
           >
-            <p className='section-title'>Overview</p>
-            <div
-              className='overview-placeholder'
-              style={{
-                flex: 1,
-                minHeight: 0,
-                display: 'flex',
-                justifyContent: 'left',
-                alignItems: 'left',
-                color: '#524e4e',
-                outline: `2px solid ${overviewInfo.color}`,
-                backgroundColor: overviewInfo.backgroundColor,
-                borderRadius: '12px',
-                padding: '15px',
-                textAlign: 'left',
-              }}
-            >
-              <div style={{ marginLeft: '20px' }}>
-                {' '}
-                <img
-                  src={overviewInfo.icon}
-                  alt='Overview Icon'
-                  style={{
-                    height: '2em',
-                    width: 'auto',
-                    marginRight: '15px',
-                    marginTop: '5px',
-                  }}
-                />
-              </div>
+            <div style={{ display: 'flex' }}>
+              <p className='section-title'>Overview</p>
+              {recommendationData ? (
+                <OverviewDetails recommendationData={recommendationData} />
+              ) : null}
+            </div>
+            {recommendationData ? (
               <div
+                className='overview-placeholder'
                 style={{
+                  flex: 1,
+                  minHeight: 0,
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '2px',
-                  alignItems: 'flex-start',
+                  justifyContent: 'left',
+                  alignItems: 'left',
+                  color: '#524e4e',
+                  outline: `2px solid ${overviewInfo?.color}`,
+                  backgroundColor: overviewInfo?.backgroundColor,
+                  borderRadius: '12px',
+                  padding: '15px',
+                  textAlign: 'left',
                 }}
               >
-                <span
+                <div style={{ marginLeft: '20px' }}>
+                  {' '}
+                  <img
+                    src={overviewInfo?.icon}
+                    alt='Overview Icon'
+                    style={{
+                      height: '2em',
+                      width: 'auto',
+                      marginRight: '15px',
+                      marginTop: '5px',
+                    }}
+                  />
+                </div>
+                <div
                   style={{
-                    fontSize: '1.2rem',
-                    fontWeight: 'bold',
-                    color: overviewInfo.color,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
+                    alignItems: 'flex-start',
                   }}
                 >
-                  {overviewInfo.advice}
-                </span>
-                <span style={{ fontSize: '0.9rem', color: overviewInfo.color }}>
-                  {overviewInfo.desc}
-                </span>
+                  <span
+                    style={{
+                      fontSize: '1.2rem',
+                      fontWeight: 'bold',
+                      color: overviewInfo?.color,
+                    }}
+                  >
+                    {overviewInfo?.advice}
+                  </span>
+                  <span
+                    style={{ fontSize: '0.9rem', color: overviewInfo?.color }}
+                  >
+                    {overviewInfo?.desc}
+                  </span>
+                </div>
               </div>
-            </div>
+            ) : (
+              <i style={{ opacity: 0.5, fontSize: '14px' }}>Loading...</i>
+            )}
           </div>
         </div>
 

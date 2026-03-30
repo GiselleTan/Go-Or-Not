@@ -419,10 +419,10 @@ export const handler = async (
 
     const summary =
       recommendation === 'GO'
-        ? 'Conditions are acceptable overall. It is a good time to go.'
+        ? 'Conditions are acceptable overall. It is a good time to go!'
         : recommendation === 'MAYBE'
-          ? 'Conditions are mixed. You may want to go with caution.'
-          : 'Current conditions are not favorable. Consider postponing your trip.';
+          ? 'Hmm...Conditions are mixed. You may want to go with caution.'
+          : 'Current conditions are not favorable. Consider postponing your trip, or use our notification system to remind you in a few hours!';
 
     return {
       statusCode: 200,
