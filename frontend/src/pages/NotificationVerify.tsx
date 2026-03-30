@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
+import { CircleCheckIcon, XCircleIcon } from 'lucide-react';
+import styles from './NotificationVerify.module.scss';
 
 type VerifyState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -13,6 +15,8 @@ const NotificationVerify = () => {
 
   useEffect(() => {
     if (!subscriptionKey || !token) {
+      setState('error');
+      setMessage('Verification link is incomplete.');
       return;
     }
 
@@ -39,33 +43,37 @@ const NotificationVerify = () => {
         setMessage(payload.message ?? 'Subscription verified successfully.');
       } catch {
         setState('error');
-        setMessage('Unable to reach verification service. Please try again later.');
+        setMessage(
+          'Unable to reach verification service. Please try again later.',
+        );
       }
     };
 
     runVerification();
   }, [subscriptionKey, token]);
 
-  if (!subscriptionKey || !token) {
-    return (
-      <div className="should-i-go">
-        <div className="card" style={{ maxWidth: 720, margin: '24px auto', textAlign: 'center' }}>
-          <h2 style={{ marginBottom: 8 }}>Notification Verification</h2>
-          <p style={{ color: '#C80000', fontWeight: 600 }}>Verification link is incomplete.</p>
-        </div>
-      </div>
-    );
-  }
-
   const color = state === 'error' ? '#C80000' : '#008E9B';
 
   return (
-    <div className="should-i-go">
-      <div className="card" style={{ maxWidth: 720, margin: '24px auto', textAlign: 'center' }}>
-        <h2 style={{ marginBottom: 8 }}>Notification Verification</h2>
-        {state === 'loading' && <p style={{ color: '#666' }}>Verifying your subscription...</p>}
-        {state !== 'loading' && <p style={{ color, fontWeight: 600 }}>{message}</p>}
+    <div className='should-i-go'>
+      <div className={styles.notificationCard}>
+        {state === 'success' ? (
+          <CircleCheckIcon size={48} color={color} />
+        ) : state === 'error' ? (
+          <XCircleIcon size={48} color={color} />
+        ) : null}
+        <div className={styles.notifContent}>
+          <h2 style={{ marginBottom: 8 }}>Notification Verification</h2>
+          {state === 'loading' ? (
+            <p style={{ color: '#666' }}>Verifying your subscription...</p>
+          ) : (
+            <p style={{ color, fontWeight: 600 }}>{message}</p>
+          )}
+        </div>
       </div>
+      <a href='/' className={styles.backLink}>
+        Back to Home
+      </a>
     </div>
   );
 };
