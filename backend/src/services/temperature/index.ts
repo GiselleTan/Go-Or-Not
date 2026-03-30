@@ -10,7 +10,9 @@ import type {
 } from './types.js';
 
 const CACHE_TTL_MINUTES = 15;
-const CACHE_PK = 'TEMPERATURE';
+const TEMPERATURE_CACHE_PK = 'TEMPERATURE';
+const HUMIDITY_CACHE_PK = 'HUMIDITY';
+const WIND_CACHE_PK = 'WIND';
 
 const fetchValueFromStation = async (
   url: string,
@@ -75,7 +77,7 @@ export const getTemperatureByLocation = async (
   longitude: number,
 ): Promise<ServiceResult<TemperatureReading>> => {
   return withCache({
-    pk: CACHE_PK,
+    pk: TEMPERATURE_CACHE_PK,
     sk: `${latitude}#${longitude}`,
     ttlMinutes: CACHE_TTL_MINUTES,
     label: `temperature (${latitude}, ${longitude})`,
@@ -109,7 +111,7 @@ export const getHumidityByLocation = async (
   longitude: number,
 ): Promise<ServiceResult<HumidityReading>> => {
   return withCache({
-    pk: CACHE_PK,
+    pk: HUMIDITY_CACHE_PK,
     sk: `${latitude}#${longitude}`,
     ttlMinutes: CACHE_TTL_MINUTES,
     label: `humidity (${latitude}, ${longitude})`,
@@ -137,7 +139,7 @@ export const getWindByLocation = async (
   longitude: number,
 ): Promise<ServiceResult<WindReading>> => {
   return withCache({
-    pk: CACHE_PK,
+    pk: WIND_CACHE_PK,
     sk: `${latitude}#${longitude}`,
     ttlMinutes: CACHE_TTL_MINUTES,
     label: `wind (${latitude}, ${longitude})`,

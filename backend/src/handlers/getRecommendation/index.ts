@@ -1,5 +1,6 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
+import dayjs from 'dayjs';
 import { jsonHeaders } from '../../utils/headers.js';
 
 type RecommendationRequest = {
@@ -20,12 +21,22 @@ type LambdaProxyLikeResponse = {
 
 type WeatherMetadataEnvelope = {
   data?: {
+    temperature?: { data?: { temperature?: number } };
     psi?: { data?: { psiTwentyFourHourly?: number } };
     uv?: { data?: { value?: number } };
   };
+  temperature?: { data?: { temperature?: number } };
   psi?: { data?: { psiTwentyFourHourly?: number } };
   uv?: { data?: { value?: number } };
 };
+
+const SINGAPORE_MONTHLY_HIGH_C = [
+  30.0, 31.1, 31.7, 31.7, 31.7, 31.1, 31.1, 31.1, 31.1, 31.1, 30.6, 30.0,
+] as const;
+
+const SINGAPORE_MONTHLY_LOW_C = [
+  25.0, 25.0, 25.6, 26.1, 26.1, 26.1, 26.1, 26.1, 25.6, 25.6, 25.0, 25.0,
+] as const;
 
 const getLambdaClient = (event: APIGatewayProxyEvent): LambdaClient => {
   const host = (event.headers.host ?? event.headers.Host ?? '').toLowerCase();
@@ -134,6 +145,82 @@ const scoreWeather = (forecastText: string): number => {
   if (text.includes('fair') || text.includes('sunny')) return 0.9;
 
   return 0.55;
+};
+
+const getSingaporeNow = (): dayjs.Dayjs => {
+  const singaporeNow = new Date(
+    new Date().toLocaleString('en-US', { timeZone: 'Asia/Singapore' }),
+  );
+  return dayjs(singaporeNow);
+};
+
+const getSingaporeHour = (singaporeNow: dayjs.Dayjs): number => {
+  const singaporeHour = singaporeNow.hour();
+  return singaporeHour >= 0 && singaporeHour <= 23 ? singaporeHour : 12;
+};
+
+const getSingaporeMonthIndex = (singaporeNow: dayjs.Dayjs): number => {
+  const monthIndex = singaporeNow.month();
+  return monthIndex >= 0 && monthIndex <= 11 ? monthIndex : 0;
+};
+
+const estimateMonthlyBaselineTemperature = (
+  monthIndex: number,
+  hour: number,
+): number => {
+  const high = SINGAPORE_MONTHLY_HIGH_C[monthIndex] ?? 31;
+  const low = SINGAPORE_MONTHLY_LOW_C[monthIndex] ?? 25.5;
+  const dayMid = (high + low) / 2;
+
+  if (hour >= 5 && hour <= 7) {
+    return low;
+  }
+
+  if (hour > 7 && hour <= 13) {
+    const progress = (hour - 7) / (13 - 7);
+    return low + (high - low) * progress;
+  }
+
+  if (hour > 13 && hour < 20) {
+    const progress = (hour - 13) / (20 - 13);
+    return high - (high - dayMid) * progress;
+  }
+
+  if (hour >= 20) {
+    const progress = (hour - 20) / (24 - 20);
+    return dayMid - (dayMid - low) * progress;
+  }
+
+  const progress = hour / 5;
+  return low + (dayMid - low) * progress;
+};
+
+const scoreTemperature = (
+  temperature: number | undefined,
+  baselineTemperature: number,
+): number => {
+  if (temperature == null) {
+    return 0.55;
+  }
+
+  const idealTemperature = baselineTemperature - 0.8;
+
+  if (temperature <= idealTemperature) {
+    const coolDelta = idealTemperature - temperature;
+    if (coolDelta <= 1) return 0.95;
+    if (coolDelta <= 2) return 0.88;
+    if (coolDelta <= 3.5) return 0.78;
+    if (coolDelta <= 5) return 0.62;
+    return 0.45;
+  }
+
+  const warmDelta = temperature - idealTemperature;
+  if (warmDelta <= 1.5) return 0.93;
+  if (warmDelta <= 3) return 0.86;
+  if (warmDelta <= 4.5) return 0.76;
+  if (warmDelta <= 6) return 0.64;
+  if (warmDelta <= 8) return 0.5;
+  return 0.35;
 };
 
 const scorePsi = (psi: number | undefined): number => {
@@ -278,7 +365,22 @@ export const handler = async (
       parking?: Array<{ total_lots?: number; lots_available?: number }>;
     };
 
-    const weatherScore = scoreWeather(twoHr.data.forecast ?? '');
+    const weatherConditionScore = scoreWeather(twoHr.data.forecast ?? '');
+    const temperatureValue =
+      weatherMetadata.temperature?.data?.temperature ??
+      weatherMetadata.data?.temperature?.data?.temperature;
+    const singaporeNow = getSingaporeNow();
+    const singaporeHour = getSingaporeHour(singaporeNow);
+    const singaporeMonthIndex = getSingaporeMonthIndex(singaporeNow);
+    const temperatureBaseline = estimateMonthlyBaselineTemperature(
+      singaporeMonthIndex,
+      singaporeHour,
+    );
+    const temperatureScore = scoreTemperature(
+      temperatureValue,
+      temperatureBaseline,
+    );
+    const weatherScore = weatherConditionScore * 0.7 + temperatureScore * 0.3;
     const {
       score: parkingScore,
       occupancyScore: parkingOccupancyScore,
@@ -336,7 +438,13 @@ export const handler = async (
         summary,
         weights,
         factors: {
+          weatherConditionScore,
           weatherScore,
+          temperatureValue,
+          temperatureBaseline,
+          temperatureScore,
+          singaporeHour,
+          singaporeMonthIndex,
           parkingScore,
           parkingOccupancyScore,
           parkingEmptyLotsAbsolute,
