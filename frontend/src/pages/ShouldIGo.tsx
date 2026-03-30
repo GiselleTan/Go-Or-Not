@@ -8,6 +8,7 @@ import GoodIcon from '../assets/good.svg';
 import MaybeIcon from '../assets/maybe.svg';
 import type { ParkingResponse } from '../../../backend/src/services/carpark/types.ts';
 import { API_BASE_URL } from '../config';
+import { InfoTooltip } from '../components/InfoTooltip.tsx';
 
 // FORMULA: Steadman's Formula for feels like temperature
 // we assume here that relative humidity is given as a %, and wind is given in knots (i.e., 1 kn = 1.852km/h)
@@ -566,9 +567,9 @@ const ShouldIGo = () => {
                 >
                   <div
                     style={{
-                      display: 'block',
+                      display: 'flex',
                       alignItems: 'center',
-                      gap: '8px',
+                      gap: '6px',
                       flexWrap: 'wrap',
                       whiteSpace: 'normal',
                     }}
@@ -583,19 +584,7 @@ const ShouldIGo = () => {
                     >
                       {weatherData.desc}
                     </span>
-                    <div
-                      className='tooltip-container'
-                      style={{
-                        verticalAlign: 'middle',
-                        marginLeft: '6px',
-                        display: 'inline-block',
-                      }}
-                    >
-                      <span>ⓘ</span>
-                      <span className='tooltip-text'>
-                        A 2-hour Weather Forecast
-                      </span>
-                    </div>
+                    <InfoTooltip text='A 2-hour Weather Forecast' />
                   </div>
                   <div
                     style={{
@@ -608,13 +597,10 @@ const ShouldIGo = () => {
                     <span style={{ fontSize: '0.85rem', color: '#524e4e' }}>
                       Feels like {currentFeelsLike}°C
                     </span>
-                    <div className='tooltip-container'>
-                      <span>ⓘ</span>
-                      <span className='tooltip-text'>
-                        Calculated based on temperature, humidity, and wind
-                        speed using Steadman Apparent Temperature formula.
-                      </span>
-                    </div>
+                    <InfoTooltip
+                      text='Calculated based on temperature, humidity, and wind
+                        speed using Steadman Apparent Temperature formula.'
+                    />
                   </div>
                 </div>
               </div>
@@ -662,13 +648,10 @@ const ShouldIGo = () => {
                       <p style={{ fontSize: '0.8rem', color: '#524e4e' }}>
                         UV INDEX
                       </p>
-                      <div className='tooltip-container'>
-                        <span>ⓘ</span>
-                        <span className='tooltip-text'>
-                          Measures how intense the Ultra Violet (UV) rays from
-                          the Sun are predicted to be.
-                        </span>
-                      </div>
+                      <InfoTooltip
+                        text='Measures how intense the Ultra Violet (UV) rays from
+                          the Sun are predicted to be.'
+                      />
                     </div>
                     <div
                       style={{
@@ -759,13 +742,10 @@ const ShouldIGo = () => {
                     }}
                   >
                     <p style={{ fontSize: '0.8rem', color: '#524e4e' }}>PSI</p>
-                    <div className='tooltip-container'>
-                      <span>ⓘ</span>
-                      <span className='tooltip-text'>
-                        Pollutant Standards Index: Measures air quality, taking
-                        into account several pollutants.
-                      </span>
-                    </div>
+                    <InfoTooltip
+                      text='Pollutant Standards Index: Measures air quality, taking
+                        into account several pollutants.'
+                    />
                   </div>
                   {/* Arc will go here */}
                   <div

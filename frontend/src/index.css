@@ -228,12 +228,12 @@ body {
 .tooltip-container {
   position: relative;
   display: inline-block;
-  cursor: help;
+  cursor: pointer;
 }
 
 .tooltip-text {
-  visibility: hidden;
-  background-color: #6200ea;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
   color: #fff;
   text-align: center;
   border-radius: 4px;
