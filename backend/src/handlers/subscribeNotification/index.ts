@@ -124,7 +124,8 @@ export const handler = async (
     const baseUrl = deriveApiBaseUrl(event);
 
     if (senderEmail && baseUrl) {
-      const verifyUrl = new URL('/notifications/verify', baseUrl);
+      const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+      const verifyUrl = new URL('notifications/verify', normalizedBaseUrl);
       verifyUrl.searchParams.set('subscriptionKey', subscriptionKey);
       verifyUrl.searchParams.set('token', verificationToken);
 

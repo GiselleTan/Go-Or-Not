@@ -19,7 +19,10 @@ const NotificationVerify = () => {
     const runVerification = async () => {
       setState('loading');
       try {
-        const endpoint = new URL('/notifications/verify', API_BASE_URL);
+        const normalizedApiBase = API_BASE_URL.endsWith('/')
+          ? API_BASE_URL
+          : `${API_BASE_URL}/`;
+        const endpoint = new URL('notifications/verify', normalizedApiBase);
         endpoint.searchParams.set('subscriptionKey', subscriptionKey);
         endpoint.searchParams.set('token', token);
 
