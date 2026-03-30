@@ -1,0 +1,25 @@
+.notificationCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 8px;
+  background-color: white;
+  border-radius: 8px;
+  height: 200px
+}
+
+.notifContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.backLink {
+  display: flex;
+  justify-content: center;
+  width: 100%;;
+}
