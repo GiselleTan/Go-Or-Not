@@ -8,13 +8,16 @@ import './index.css';
 function App() {
   return (
     <Router>
-      <div className="app-shell">
+      <div className='app-shell'>
         <Navbar />
-        <div className="page-content">
+        <div className='page-content'>
           <Routes>
             <Route index element={<ShouldIGo />} />
-            <Route path="traffic" element={<Traffic />} />
-            <Route path="notifications/verify" element={<NotificationVerify />} />
+            <Route path='traffic' element={<Traffic />} />
+            <Route
+              path='notifications/verify'
+              element={<NotificationVerify />}
+            />
           </Routes>
         </div>
       </div>

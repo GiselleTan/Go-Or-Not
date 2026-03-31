@@ -1,5 +1,6 @@
 import { withCache } from '../../utils/cache.js';
 import { API_URLS } from '../../config/api.js';
+import { calculateDistanceKm } from '../../utils/utils.js';
 import type { ServiceResult } from '../../types/index.js';
 import type {
   TemperatureReading,
@@ -9,28 +10,9 @@ import type {
 } from './types.js';
 
 const CACHE_TTL_MINUTES = 15;
-const CACHE_PK = 'TEMPERATURE';
-
-const toRadians = (value: number): number => (value * Math.PI) / 180;
-
-const calculateDistanceKm = (
-  latitudeA: number,
-  longitudeA: number,
-  latitudeB: number,
-  longitudeB: number,
-): number => {
-  const earthRadiusKm = 6371;
-  const deltaLatitude = toRadians(latitudeB - latitudeA);
-  const deltaLongitude = toRadians(longitudeB - longitudeA);
-
-  const a =
-    Math.sin(deltaLatitude / 2) ** 2 +
-    Math.cos(toRadians(latitudeA)) *
-      Math.cos(toRadians(latitudeB)) *
-      Math.sin(deltaLongitude / 2) ** 2;
-
-  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-};
+const TEMPERATURE_CACHE_PK = 'TEMPERATURE';
+const HUMIDITY_CACHE_PK = 'HUMIDITY';
+const WIND_CACHE_PK = 'WIND';
 
 const fetchValueFromStation = async (
   url: string,
@@ -56,26 +38,29 @@ const fetchValueFromStation = async (
   type ReadingData =
     GeneralApiResponse['data']['readings'][number]['data'][number];
 
-  const station = apiData.data.stations.reduce<Station | null>((closest, current) => {
-    if (!closest) {
-      return current;
-    }
+  const station = apiData.data.stations.reduce<Station | null>(
+    (closest, current) => {
+      if (!closest) {
+        return current;
+      }
 
-    const currentDistance = calculateDistanceKm(
-      latitude,
-      longitude,
-      current.location.latitude,
-      current.location.longitude,
-    );
-    const closestDistance = calculateDistanceKm(
-      latitude,
-      longitude,
-      closest.location.latitude,
-      closest.location.longitude,
-    );
+      const currentDistance = calculateDistanceKm(
+        latitude,
+        longitude,
+        current.location.latitude,
+        current.location.longitude,
+      );
+      const closestDistance = calculateDistanceKm(
+        latitude,
+        longitude,
+        closest.location.latitude,
+        closest.location.longitude,
+      );
 
-    return currentDistance < closestDistance ? current : closest;
-  }, null);
+      return currentDistance < closestDistance ? current : closest;
+    },
+    null,
+  );
 
   if (!station) {
     throw new StationNotFoundError(latitude, longitude);
@@ -92,7 +77,7 @@ export const getTemperatureByLocation = async (
   longitude: number,
 ): Promise<ServiceResult<TemperatureReading>> => {
   return withCache({
-    pk: CACHE_PK,
+    pk: TEMPERATURE_CACHE_PK,
     sk: `${latitude}#${longitude}`,
     ttlMinutes: CACHE_TTL_MINUTES,
     label: `temperature (${latitude}, ${longitude})`,
@@ -126,7 +111,7 @@ export const getHumidityByLocation = async (
   longitude: number,
 ): Promise<ServiceResult<HumidityReading>> => {
   return withCache({
-    pk: CACHE_PK,
+    pk: HUMIDITY_CACHE_PK,
     sk: `${latitude}#${longitude}`,
     ttlMinutes: CACHE_TTL_MINUTES,
     label: `humidity (${latitude}, ${longitude})`,
@@ -154,7 +139,7 @@ export const getWindByLocation = async (
   longitude: number,
 ): Promise<ServiceResult<WindReading>> => {
   return withCache({
-    pk: CACHE_PK,
+    pk: WIND_CACHE_PK,
     sk: `${latitude}#${longitude}`,
     ttlMinutes: CACHE_TTL_MINUTES,
     label: `wind (${latitude}, ${longitude})`,

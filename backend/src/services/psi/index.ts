@@ -1,10 +1,9 @@
-import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
-import { dynamoDb, CACHE_TABLE } from '../../utils/dynamodb.js';
 import { withCache } from '../../utils/cache.js';
 import { API_URLS } from '../../config/api.js';
+import { calculateDistanceKm } from '../../utils/utils.js';
 import type { ServiceResult } from '../../types/index.js';
 import type { PsiReading, PsiApiResponse, Region } from './types.js';
-import { REGIONS } from './types.js';
+import { REGION_LABEL_LOCATIONS, REGIONS } from './types.js';
 
 const CACHE_TTL_MINUTES = 15;
 const CACHE_PK = 'PSI';
@@ -84,4 +83,31 @@ export const getPsiByRegion = async (
       return buildReading(region, regionMeta, latestItem);
     },
   });
+};
+
+export const getPsiByLocation = async (
+  latitude: number,
+  longitude: number,
+): Promise<ServiceResult<PsiReading>> => {
+  const nearestRegion = REGIONS.reduce<Region>((closest, current) => {
+    const currentLocation = REGION_LABEL_LOCATIONS[current];
+    const closestLocation = REGION_LABEL_LOCATIONS[closest];
+
+    const currentDistance = calculateDistanceKm(
+      latitude,
+      longitude,
+      currentLocation.latitude,
+      currentLocation.longitude,
+    );
+    const closestDistance = calculateDistanceKm(
+      latitude,
+      longitude,
+      closestLocation.latitude,
+      closestLocation.longitude,
+    );
+
+    return currentDistance < closestDistance ? current : closest;
+  }, 'central');
+
+  return getPsiByRegion(nearestRegion);
 };

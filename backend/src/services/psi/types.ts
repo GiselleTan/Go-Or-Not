@@ -2,6 +2,17 @@ export type Region = 'west' | 'east' | 'central' | 'south' | 'north';
 
 export const REGIONS: Region[] = ['west', 'east', 'central', 'south', 'north'];
 
+export const REGION_LABEL_LOCATIONS: Record<
+  Region,
+  { latitude: number; longitude: number }
+> = {
+  west: { latitude: 1.35735, longitude: 103.7 },
+  east: { latitude: 1.35735, longitude: 103.94 },
+  central: { latitude: 1.35735, longitude: 103.82 },
+  south: { latitude: 1.29587, longitude: 103.82 },
+  north: { latitude: 1.41803, longitude: 103.82 },
+};
+
 export const isValidRegion = (value: string): value is Region =>
   (REGIONS as string[]).includes(value);
 

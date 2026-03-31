@@ -5,9 +5,11 @@ const Navbar = () => {
   const { pathname } = useLocation();
 
   return (
-    <nav className="navbar">
-      <span className="navbar-logo">Go or Not</span>
-      <div className="navbar-links">
+    <nav className='navbar'>
+      <span className='navbar-logo' onClick={() => navigate('/')}>
+        Go or Not
+      </span>
+      <div className='navbar-links'>
         <button
           className={`nav-btn ${pathname === '/' ? 'active' : ''}`}
           onClick={() => navigate('/')}

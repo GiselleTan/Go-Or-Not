@@ -5,7 +5,7 @@ import {
   getTemperatureByLocation,
   getWindByLocation,
 } from '../../services/temperature/index.js';
-import { getPsiByRegion } from '../../services/psi/index.js';
+import { getPsiByLocation, getPsiByRegion } from '../../services/psi/index.js';
 import type { Region } from '../../services/psi/types.js';
 import { getCurrentUvIndex } from '../../services/uv/index.js';
 import { extractError } from '../../utils/utils.js';
@@ -24,7 +24,7 @@ export const handler = async (
         getTemperatureByLocation(parsedLatitude, parsedLongitude),
         getHumidityByLocation(parsedLatitude, parsedLongitude),
         getWindByLocation(parsedLatitude, parsedLongitude),
-        region ? getPsiByRegion(region as Region) : Promise.resolve(null),
+        getPsiByLocation(parsedLatitude, parsedLongitude),
         getCurrentUvIndex(),
       ]);
 
